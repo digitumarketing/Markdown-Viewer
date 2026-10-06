@@ -93,7 +93,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v5`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v6`) to force old caches out.
 
 ## Editing and saving
 
