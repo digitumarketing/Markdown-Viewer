@@ -8,8 +8,14 @@
  *   GET  /api/share/:id    ->  the markdown text
  *   GET  /s/:id, /e/:id    ->  the app (index.html), which then loads :id
  *
+ *   GET  /markdown-editor and the other paths in PAGES  ->  the app, with
+ *        that page's title, description, heading and content rewritten in
+ *
  * Shared documents live in the SHARES KV namespace under "doc:<id>".
+ * Shared and embedded documents are kept out of search results.
  */
+
+import { SITE, PAGES } from "./pages.js";
 
 const MAX_BYTES = 512 * 1024;          // a very long document is still well under this
 const ID_LEN = 7;                      // 57^7 ≈ 1.9 trillion ids
@@ -56,22 +62,73 @@ async function readShare(id, env) {
   });
 }
 
+const SECURITY_HEADERS = {
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+};
+
+function withHeaders(response, extra) {
+  const r = new Response(response.body, response);
+  for (const [k, v] of Object.entries({ ...SECURITY_HEADERS, ...extra })) r.headers.set(k, v);
+  return r;
+}
+
+const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/* index.html, with one landing page's copy written into it */
+async function landingPage(request, env, path) {
+  const page = PAGES[path];
+  const url = SITE + path;
+  const base = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+  const setAttr = (name, value) => ({ element(el) { el.setAttribute(name, value); } });
+  const setHTML = (html) => ({ element(el) { el.setInnerContent(html, { html: true }); } });
+
+  const rewritten = new HTMLRewriter()
+    .on("title", setHTML(esc(page.title)))
+    .on('meta[name="description"]', setAttr("content", page.desc))
+    .on('link[rel="canonical"]', setAttr("href", url))
+    .on('meta[property="og:url"]', setAttr("content", url))
+    .on('meta[property="og:title"]', setAttr("content", page.ogTitle))
+    .on('meta[property="og:description"]', setAttr("content", page.desc))
+    .on('meta[name="twitter:title"]', setAttr("content", page.ogTitle))
+    .on('meta[name="twitter:description"]', setAttr("content", page.desc))
+    .on("script#ldjson", setHTML(page.ld))
+    .on("#heroEyebrow", setHTML(esc(page.eyebrow)))
+    .on("#heroTitle", setHTML(page.h1))
+    .on("#heroLede", setHTML(esc(page.lede)))
+    .on("#seoContent", setHTML(page.content))
+    .on("body", setAttr("data-page", path.slice(1)))
+    .transform(base);
+
+  return withHeaders(rewritten, { "cache-control": "public, max-age=0, must-revalidate" });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    if (path === "/api/share" && request.method === "POST") return createShare(request, env);
-
-    const read = path.match(/^\/api\/share\/([A-Za-z0-9]{4,16})$/);
-    if (read && request.method === "GET") return readShare(read[1], env);
-
-    if (/^\/[se]\/[A-Za-z0-9]{4,16}\/?$/.test(path)) {
-      // "/" rather than "/index.html": the assets layer redirects the latter to the former
-      return env.ASSETS.fetch(new Request(new URL("/", url), request));
+    if (path === "/api/share" && request.method === "POST") {
+      return withHeaders(await createShare(request, env), { "x-robots-tag": "noindex" });
     }
 
+    const read = path.match(/^\/api\/share\/([A-Za-z0-9]{4,16})$/);
+    if (read && request.method === "GET") return withHeaders(await readShare(read[1], env), { "x-robots-tag": "noindex" });
+
+    /* one address per page: no trailing slash, no upper case */
+    const clean = path.length > 1 ? path.replace(/\/+$/, "").toLowerCase() : path;
+    if (clean !== path && PAGES[clean]) return Response.redirect(new URL(clean + url.search, url), 301);
+    if (PAGES[path]) return landingPage(request, env, path);
+
+    if (/^\/[se]\/[A-Za-z0-9]{4,16}\/?$/.test(path)) {
+      /* someone's shared document: usable, but not for search engines.
+         "/" rather than "/index.html", which the assets layer redirects */
+      const page = await env.ASSETS.fetch(new Request(new URL("/", url), request));
+      return withHeaders(page, { "x-robots-tag": "noindex, nofollow" });
+    }
     if (path.startsWith("/api/")) return json({ error: "not_found" }, 404);
+    /* anything else is not a file: the assets layer answers with 404.html */
     return env.ASSETS.fetch(request);
   },
 };

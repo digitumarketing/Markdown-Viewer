@@ -3,7 +3,7 @@
   "name": "Digitum Markdown Viewer",
   "short_name": "MD Viewer",
   "description": "Open, read and edit markdown files in a clean, printable layout. Files never leave your device.",
-  "start_url": "/index.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -85,7 +85,7 @@
   ],
   "file_handlers": [
     {
-      "action": "/index.html",
+      "action": "/",
       "name": "Markdown document",
       "accept": {
         "text/markdown": [

@@ -2,6 +2,31 @@
 
 This folder is a complete static site. Deploy it as-is, `index.html` at the root.
 
+## SEO
+
+- **Pages.** `/` (markdown viewer) plus four landing pages, `/markdown-editor`,
+  `/markdown-to-pdf`, `/markdown-to-html` and `/markdown-cheat-sheet`. Each is
+  the full app with its own title, meta description, canonical URL, H1, intro,
+  content, FAQ and JSON-LD. The Worker builds them by rewriting `index.html`
+  with HTMLRewriter, so there is only one copy of the app to maintain.
+- **Copy lives in `tools/build_seo.py`.** Edit it there, then run
+  `python3 tools/build_seo.py`. It writes the home content between
+  `<!--seo:start-->` and `<!--seo:end-->` in `index.html`, the home JSON-LD,
+  `src/pages.js` for the landing pages, and `sitemap.xml`. FAQ text and its
+  FAQPage schema come from the same list, so they cannot drift apart.
+- **Structured data:** WebApplication (free offer, feature list), Organization,
+  WebSite, HowTo, FAQPage and BreadcrumbList.
+- **Crawling:** `robots.txt` (blocks `/api/`, `/s/`, `/e/`), `sitemap.xml`,
+  `llms.txt`, and `X-Robots-Tag: noindex` on shared and embedded documents so
+  people's documents never compete with the tool pages.
+- **Social:** Open Graph and Twitter card tags with `og-image.png` (1200×630).
+- **Technical:** canonical URLs, lower-case no-trailing-slash redirects (301),
+  a real 404 page, `favicon.ico`, security headers and long caching for icons
+  through `_headers` and the Worker.
+
+After deploying, submit `https://markdown.digitum.marketing/sitemap.xml` in
+Google Search Console and Bing Webmaster Tools.
+
 ## Brand
 
 Styled to the Digitum Pixel-stem brand kit (v1.0, September 2026):
@@ -108,7 +133,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v10`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v11`) to force old caches out.
 
 ## Editing and saving
 

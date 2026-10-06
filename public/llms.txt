@@ -1,0 +1,15 @@
+# Digitum Markdown Viewer
+
+> Free online markdown viewer and editor by Digitum Marketing. Open .md files in the browser, edit them with a live preview, and export to PDF, HTML, styled HTML, PNG or Markdown. Files are processed on the user's device; nothing is uploaded unless the user creates a share link.
+
+## Tools
+
+- [Markdown viewer](https://markdown.digitum.marketing/): open and read any .md, .markdown, .mdx or .txt file, or a whole folder
+- [Markdown editor](https://markdown.digitum.marketing/markdown-editor): split view with live preview, formatting toolbar, synced selection and scrolling
+- [Markdown to PDF](https://markdown.digitum.marketing/markdown-to-pdf): print-ready PDF with selectable text, paper size, margins and page numbers
+- [Markdown to HTML](https://markdown.digitum.marketing/markdown-to-html): clean HTML, styled self-contained HTML, or formatted text for Gmail, Google Docs and WordPress
+- [Markdown cheat sheet](https://markdown.digitum.marketing/markdown-cheat-sheet): syntax reference with live examples
+
+## Supports
+
+GitHub Flavored Markdown (tables, task lists, strikethrough, fenced code with syntax highlighting), LaTeX maths via KaTeX, Mermaid diagrams, short share links and embeds, light and dark themes, installable offline app.
