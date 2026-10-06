@@ -287,8 +287,8 @@ body.rail-open .rail-veil{opacity:1;pointer-events:auto}
 }
 
 article{
-  width:100%;max-width:760px;margin:0 auto;padding:52px 26px 40px;
-  font-family:var(--prose);font-size:17px;line-height:1.65;
+  width:100%;max-width:var(--read-width,760px);margin:0 auto;padding:52px 26px 40px;
+  font-family:var(--read-font,var(--prose));font-size:var(--read-size,17px);line-height:1.65;
 }
 article h1,article h2,article h3,article h4,article h5,article h6{
   font-family:var(--ui);font-weight:600;letter-spacing:-.01em;line-height:1.22;scroll-margin-top:80px;
@@ -346,12 +346,15 @@ article mark{background:var(--lime);color:var(--lime-ink);padding:.05em .12em;bo
 .icon-btn.on{background:var(--lime);color:var(--lime-ink);border-color:transparent}
 
 /* In edit mode the stage becomes a two pane, fixed height workspace. */
+/* the editing workspace fills the window under the top bar and tab strip */
+body.editing main{height:100vh}
 body.editing #stage{
   display:flex;align-items:stretch;gap:0;
-  height:calc(100vh - 55px);overflow:hidden;
+  flex:1;min-height:0;overflow:hidden;
 }
 body.editing .page-foot{display:none}
 body.editing article{
+  position:relative;
   flex:1;min-width:0;max-width:none;margin:0;
   padding:28px 30px 60px;overflow-y:auto;
 }
@@ -418,22 +421,110 @@ body.editing article{
 /* The textarea sits on a mirror of its own text. The mirror paints the
    range selected in the preview, which a textarea cannot do by itself. */
 .editor-wrap{position:relative;flex:1;min-height:0}
-.editor,.editor-mirror{
+.editor,.editor-mirror,.editor-measure{
   font-family:var(--mono);font-size:13.5px;line-height:1.75;padding:16px 14px 60px;
   tab-size:2;white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;
   letter-spacing:normal;word-spacing:normal;
 }
 .editor{
-  position:absolute;inset:0;width:100%;height:100%;resize:none;border:0;outline:none;
+  position:absolute;top:0;bottom:0;left:var(--gut);width:calc(100% - var(--gut));height:100%;resize:none;border:0;outline:none;
   background:transparent;color:var(--ink);z-index:1;caret-color:var(--ink);
 }
 .editor::selection{background:color-mix(in srgb,var(--lime) 70%,transparent);color:var(--lime-ink)}
 .editor-mirror{
-  position:absolute;left:0;top:0;margin:0;overflow:hidden;color:transparent;
+  position:absolute;left:var(--gut);top:0;margin:0;overflow:hidden;color:transparent;
   pointer-events:none;user-select:none;z-index:0;
 }
 .editor-mirror mark{background:var(--sync);color:transparent;border-radius:2px;box-shadow:0 0 0 1px var(--sync)}
 .editor-mirror mark.soft{background:var(--sync-soft);box-shadow:none}
+
+/* the mirror's padding-left must follow the editor's in edit-only view */
+body.editing.v-editor .editor-wrap .editor-mirror,body.editing.v-editor .editor-wrap .editor-measure{padding-left:max(14px,calc((100% - 820px) / 2))}
+
+/* open files as tabs */
+.doc-tabs{
+  position:sticky;top:var(--topbar-h,55px);z-index:19;display:flex;align-items:stretch;
+  background:var(--panel);border-bottom:1px solid var(--rule);height:38px;padding-left:8px;
+}
+body.editing .doc-tabs{position:static}
+.tabs-list{display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs-list::-webkit-scrollbar{display:none}
+.doc-tab{
+  display:flex;align-items:center;gap:6px;padding:0 6px 0 12px;max-width:220px;flex:0 0 auto;
+  font-size:13px;color:var(--muted);border-right:1px solid var(--rule);cursor:pointer;white-space:nowrap;
+}
+.doc-tab:first-child{border-left:1px solid var(--rule)}
+.doc-tab:hover{color:var(--ink);background:color-mix(in srgb,var(--paper) 55%,transparent)}
+.doc-tab.active{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--lime);margin-bottom:-1px}
+.doc-tab .t-name{overflow:hidden;text-overflow:ellipsis}
+.doc-tab .t-dot{width:7px;height:7px;border-radius:50%;background:var(--ink);flex:0 0 7px}
+.doc-tab .t-x{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font-size:15px;color:var(--muted);flex:0 0 22px}
+.doc-tab .t-x:hover{background:color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
+.tab-new{width:38px;flex:0 0 38px;font-size:20px;line-height:1;color:var(--muted)}
+.tab-new:hover{color:var(--ink);background:color-mix(in srgb,var(--paper) 55%,transparent)}
+.btn.cheat{display:flex;align-items:center;gap:7px;width:100%;flex-basis:100%;color:var(--muted);font-weight:500;background:transparent;border-style:dashed}
+/* with a document open the crumb carries the name, so the app name gives way */
+@media (max-width:1500px){ body.editing .app-name span{display:none} }
+.btn.cheat:hover{color:var(--ink)}
+
+/* line numbers */
+.editor-wrap{--gut:0px}
+.editor-wrap.lines{--gut:46px}
+.gutter{
+  position:absolute;left:0;top:0;bottom:0;width:var(--gut);overflow:hidden;display:none;
+  border-right:1px solid var(--rule);background:var(--panel);z-index:2;
+}
+.editor-wrap.lines .gutter{display:block}
+.gutter-inner{position:relative;will-change:transform}
+.gutter-inner span{
+  position:absolute;right:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  line-height:calc(13.5px * 1.75);opacity:.75;
+}
+.gutter-inner span.cur{color:var(--ink);opacity:1;font-weight:500}
+.editor-measure{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;overflow:hidden;height:0}
+
+/* math */
+.math-block{margin:1.4em 0;text-align:center;overflow-x:auto;overflow-y:hidden}
+.math.pending{font-family:var(--mono);font-size:.9em;color:var(--muted)}
+.math-error{color:var(--bad);font-family:var(--mono);font-size:.85em}
+
+/* emoji picker */
+.emoji-menu{display:grid;grid-template-columns:repeat(8,34px);gap:2px;min-width:0;padding:6px}
+.emoji-menu button{width:34px;height:34px;padding:0;justify-content:center;align-items:center;font-size:19px;border-radius:6px}
+
+/* sheets: share and settings */
+.sheet.wide{max-width:500px;max-height:88vh;overflow-y:auto}
+.field-label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.copy-row{display:flex;gap:8px;align-items:flex-start}
+.copy-row input,.copy-row textarea,.css-box,.set-ctl select{
+  flex:1;min-width:0;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:13px;
+}
+.copy-row textarea,.css-box{font-family:var(--mono);font-size:12px;resize:vertical}
+.copy-row .btn{flex:0 0 auto;width:auto;padding:8px 12px;font-size:13px}
+#shareSheet .fine{margin-top:16px}
+.sheet .sheet-actions{display:flex;gap:8px;margin-top:6px}
+.sheet .sheet-actions .btn{width:auto;flex:1}
+.set-group{font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;padding-top:12px;border-top:1px solid var(--rule)}
+.set-group:first-of-type{border-top:0;padding-top:0;margin-top:4px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;font-size:14.5px}
+.set-ctl{display:flex;align-items:center;gap:10px}
+.set-ctl select{flex:0 0 170px}
+.set-ctl input[type=checkbox]{width:18px;height:18px;accent-color:var(--lime)}
+.set-ctl input[type=range]{width:150px;accent-color:var(--ink)}
+.set-ctl output{font-size:13px;color:var(--muted);width:36px}
+.css-box{width:100%;margin-bottom:6px}
+
+/* embedded on another site: only the document */
+body.embed .rail,body.embed .rail-veil,body.embed .topbar,body.embed .doc-tabs,body.embed .page-foot,body.embed #progress{display:none!important}
+body.embed article{padding:28px 24px 56px}
+.embed-badge{
+  position:fixed;right:12px;bottom:12px;z-index:30;display:none;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:7px;background:var(--brand-charcoal);color:var(--brand-cream);
+  font-size:12px;font-weight:500;text-decoration:none;box-shadow:var(--shadow);
+}
+.embed-badge img{width:11px;height:auto}
+body.embed .embed-badge{display:flex}
 
 /* the matching text in the preview */
 ::highlight(md-sync){background-color:var(--sync);color:var(--lime-ink)}
@@ -443,16 +534,20 @@ article .sync-flash{animation:syncflash 1.1s ease-out}
 @keyframes syncflash{from{background:var(--sync-soft)}to{background:transparent}}
 
 /* narrow screens show one pane at a time */
-.pane-tabs{display:none;gap:6px}
-.pane-tabs button{padding:4px 10px;border-radius:6px;border:1px solid var(--rule);color:var(--muted);font-size:12.5px}
+.pane-tabs{display:none;gap:0;border:1px solid var(--rule);border-radius:7px;padding:2px}
+body.editing .pane-tabs:not([hidden]){display:flex}
+body.editing.v-editor article{display:none}
+body.editing.v-preview .editor-pane{display:none}
+body.editing.v-editor .editor-pane,body.editing.v-preview .editor-pane{border-right:0}
+body.editing.v-editor .editor-wrap .editor{padding-left:max(14px,calc((100% - 820px) / 2))}
+.pane-tabs button{padding:3px 10px;border-radius:5px;border:0;color:var(--muted);font-size:12.5px;font-weight:500}
 .pane-tabs button.on{background:var(--ink);color:var(--paper);border-color:transparent}
 @media (max-width:1000px){
-  body.editing .pane-tabs:not([hidden]){display:flex}
   body.editing .editor-pane{border-right:0}
-  body.editing.show-preview .editor-pane{display:none}
-  body.editing:not(.show-preview) article{display:none}
+  body.editing:not(.v-preview) article{display:none}
+  #tabSplit{display:none}
   /* the toolbar is tight on a phone, so editing drops what it can spare */
-  body.editing #prevBtn,body.editing #nextBtn,body.editing #printBtn,body.editing #themeBtn,body.editing #div1{display:none}
+  body.editing #prevBtn,body.editing #nextBtn,body.editing #printBtn,body.editing #themeBtn,body.editing #div1,body.editing #fullBtn,body.editing #shareBtn{display:none}
   body.editing .status{font-size:10px;padding:3px 7px}
 }
 .hljs-comment,.hljs-quote{color:#7F786F;font-style:italic}
@@ -570,7 +665,9 @@ body.dragging #dropveil{display:grid}
     --ink:#272320 !important;--muted:#6B645C !important;--rule:#D6CFC2 !important;
     --link:#272320 !important;--link-line:#272320 !important;
   }
-  .rail,.topbar,#progress,.copy,.toast,.url-row,.editor-pane,.tb-menu,.pane-tabs{display:none!important}
+  .rail,.topbar,#progress,.copy,.toast,.url-row,.editor-pane,.tb-menu,.pane-tabs,.doc-tabs,.embed-badge{display:none!important}
+  body.editing main{height:auto}
+  article{max-width:none!important}
   body.editing #stage{display:block;height:auto;overflow:visible}
   body.editing article{display:block!important;overflow:visible;padding:0}
   body{background:#fff;color:#000}
@@ -603,6 +700,7 @@ body.dragging #dropveil{display:grid}
         <button class="btn primary new" id="newFile" title="Start a new markdown file (N)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v10M3 8h10"/></svg>New file</button>
         <button class="btn" id="openFiles">Open files</button>
         <button class="btn" id="openFolder">Open folder</button>
+        <button class="btn cheat" id="cheatBtn" title="Markdown syntax at a glance"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 3h4a1.5 1.5 0 0 1 1.5 1.5V13a1.5 1.5 0 0 0-1.5-1.5h-4zM13.5 3h-4A1.5 1.5 0 0 0 8 4.5V13a1.5 1.5 0 0 1 1.5-1.5h4z"/></svg>Markdown cheat sheet</button>
         <button class="btn install" id="installBtn" hidden>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12v1.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
           <span id="installLabel">Install app</span>
@@ -645,9 +743,10 @@ body.dragging #dropveil{display:grid}
       <span class="crumb" id="crumb"></span>
       <span class="meta" id="meta"></span>
       <span class="status" id="status" hidden></span>
-      <span class="pane-tabs" id="paneTabs" hidden>
-        <button id="tabEdit" class="on">Edit</button>
-        <button id="tabPreview">Preview</button>
+      <span class="pane-tabs" id="paneTabs" role="group" aria-label="View" hidden>
+        <button data-view="editor" title="Source only">Edit</button>
+        <button data-view="split" class="on" id="tabSplit" title="Source and preview side by side">Split</button>
+        <button data-view="preview" title="Preview only">Preview</button>
       </span>
       <span class="spacer"></span>
       <button class="icon-btn" id="editBtn" title="Edit this file" aria-label="Edit this file" hidden>
@@ -662,9 +761,15 @@ body.dragging #dropveil{display:grid}
       <button class="icon-btn" id="nextBtn" title="Next file" aria-label="Next file">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3l5 5-5 5"/></svg>
       </button>
+      <button class="icon-btn" id="fullBtn" title="Full screen (F11)" aria-label="Full screen" hidden>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+      </button>
       <button class="icon-btn" id="themeBtn" title="Switch light or dark" aria-label="Switch light or dark theme">
         <svg class="sun" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3"/></svg>
         <svg class="moon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1z"/></svg>
+      </button>
+      <button class="icon-btn" id="shareBtn" title="Share or embed" aria-label="Share or embed" hidden>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="3.6" r="1.8"/><circle cx="4" cy="8" r="1.8"/><circle cx="12" cy="12.4" r="1.8"/><path d="M5.6 7.1l4.8-2.6M5.6 8.9l4.8 2.6"/></svg>
       </button>
       <button class="icon-btn" id="exportBtn" title="Export" aria-label="Export" aria-haspopup="true" aria-expanded="false" hidden>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12v1.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
@@ -672,6 +777,14 @@ body.dragging #dropveil{display:grid}
       <button class="icon-btn" id="printBtn" title="Print or save as PDF" aria-label="Print">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 6V2h7v4M4.5 12H3V7h10v5h-1.5M4.5 10h7v4h-7z"/></svg>
       </button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/></svg>
+      </button>
+    </div>
+
+    <div class="doc-tabs" id="docTabs" hidden>
+      <div class="tabs-list" id="tabsList" role="tablist" aria-label="Open files"></div>
+      <button class="tab-new" id="tabNew" title="New file (N)" aria-label="New file">+</button>
     </div>
 
     <div id="stage">
@@ -720,6 +833,7 @@ body.dragging #dropveil{display:grid}
           <span>Markdown source</span>
           <span class="grow"></span>
           <label class="sync-toggle" title="Selecting text on one side highlights the same text on the other"><input type="checkbox" id="syncToggle" checked><span>Sync<span class="long"> selection</span></span></label>
+          <label class="sync-toggle" title="Scrolling one side scrolls the other to the same place"><input type="checkbox" id="scrollToggle" checked><span>Scroll</span></label>
           <button id="saveCopyBtn">Save a copy</button>
         </div>
         <div class="md-toolbar" id="mdToolbar" role="toolbar" aria-label="Formatting">
@@ -744,6 +858,9 @@ body.dragging #dropveil{display:grid}
           <button class="tb" data-cmd="quote" title="Quote (Ctrl Shift .)" aria-label="Quote"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 3v10M6 4.5h7.5M6 8h7.5M6 11.5h5"/></svg></button>
           <button class="tb" data-cmd="codeblock" title="Code block" aria-label="Code block"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 6.3L4.2 8 6 9.7M10 6.3L11.8 8 10 9.7"/></svg></button>
           <button class="tb" data-cmd="table" title="Table" aria-label="Table"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6.2h13M1.5 9.8h13M6.2 2.5v11"/></svg></button>
+          <button class="tb" data-cmd="math" title="Math: $inline$ or a $$ block" aria-label="Math"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12.5 3.5h-9l5 4.5-5 4.5h9"/></svg></button>
+          <button class="tb" data-cmd="emoji" id="emojiBtn" title="Emoji" aria-label="Emoji" aria-haspopup="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.3"/><path d="M5.4 9.6c.6 1.1 1.5 1.7 2.6 1.7s2-.6 2.6-1.7"/><circle cx="6" cy="6.6" r=".7" fill="currentColor"/><circle cx="10" cy="6.6" r=".7" fill="currentColor"/></svg></button>
+          <button class="tb" data-cmd="clear" title="Clear formatting" aria-label="Clear formatting"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.2 2.8l4 4-6.4 6.4H3.9L2 11.3a1 1 0 0 1 0-1.4z"/><path d="M5.6 6.4l4 4M7 13.2h7"/></svg></button>
           <button class="tb" data-cmd="hr" title="Divider" aria-label="Divider"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 8h13"/><path d="M4 4.5h8M4 11.5h8" stroke-width="1" opacity=".5"/></svg></button>
         </div>
         <div class="tb-menu" id="headingMenu" role="menu" aria-label="Heading level" hidden>
@@ -755,7 +872,9 @@ body.dragging #dropveil{display:grid}
           <button role="menuitem" data-level="5"><span class="m5">Heading 5</span><kbd>Ctrl Alt 5</kbd></button>
           <button role="menuitem" data-level="6"><span class="m6">Heading 6</span><kbd>Ctrl Alt 6</kbd></button>
         </div>
-        <div class="editor-wrap">
+        <div class="editor-wrap" id="editorWrap">
+          <div class="gutter" id="gutter" aria-hidden="true"><div class="gutter-inner" id="gutterInner"></div></div>
+          <div class="editor-measure" id="editorMeasure" aria-hidden="true"></div>
           <div class="editor-mirror" id="editorMirror" aria-hidden="true"></div>
           <textarea class="editor" id="editor" spellcheck="false" autocomplete="off"
                     autocapitalize="off" autocorrect="off" wrap="soft"
@@ -779,6 +898,7 @@ body.dragging #dropveil{display:grid}
 <input type="file" id="filePicker" accept=".md,.markdown,.mdx,.txt,.mkd,text/markdown" multiple hidden>
 <input type="file" id="folderPicker" webkitdirectory directory multiple hidden>
 <div class="toast" id="toast"></div>
+<a class="embed-badge" id="embedBadge" href="/" target="_blank" rel="noopener"><img src="brand/mark-lime.png" alt="">Open in Digitum Markdown Viewer</a>
 <div class="tb-menu export" id="exportMenu" role="menu" aria-label="Export" hidden>
   <div class="x-head">Export as</div>
   <button role="menuitem" data-export="md"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M5.8 9h5.4M5.8 11.4h5.4M5.8 13.8h3.4"/></svg><span><span class="x-name">Markdown</span><span class="x-sub">.md source file</span></span></button>
@@ -786,6 +906,54 @@ body.dragging #dropveil{display:grid}
   <button role="menuitem" data-export="styled"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M7.3 9.4l-1.6 1.7 1.6 1.7M9.7 9.4l1.6 1.7-1.6 1.7"/><circle cx="12.6" cy="13.6" r="1.2" fill="currentColor" stroke="none"/></svg><span><span class="x-name">Styled HTML</span><span class="x-sub">Digitum look, one self-contained file</span></span></button>
   <button role="menuitem" data-export="pdf"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M6 9.3h5M8.5 9.3v5"/></svg><span><span class="x-name">PDF</span><span class="x-sub">Choose Save as PDF in the dialog</span></span></button>
   <button role="menuitem" data-export="png"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><circle cx="6.9" cy="9.6" r="1"/><path d="M4.5 14.5l3-2.6 1.8 1.5 1.6-1.3 2.1 1.8"/></svg><span><span class="x-name">PNG</span><span class="x-sub">Image of the whole document</span></span></button>
+  <div class="x-head">Copy and print</div>
+  <button role="menuitem" data-export="copy"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="10" height="10.5" rx="1.5"/><path d="M12.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3.5v8A1.5 1.5 0 0 0 4 13h1.5"/></svg><span><span class="x-name">Copy formatted text</span><span class="x-sub">Paste into Gmail, Google Docs, WordPress</span></span></button>
+  <button role="menuitem" data-export="copyhtml"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 5L2.5 9l4 4M11.5 5l4 4-4 4"/></svg><span><span class="x-name">Copy HTML code</span><span class="x-sub">The rendered HTML as text</span></span></button>
+  <button role="menuitem" data-export="print"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 6V2h7v4M4.5 12H3V7h10v5h-1.5M4.5 10h7v4h-7z"/></svg><span><span class="x-name">Print</span><span class="x-sub">Uses the PDF and print settings</span></span></button>
+</div>
+
+
+<div class="tb-menu emoji-menu" id="emojiMenu" role="menu" aria-label="Emoji" hidden><button role="menuitem" data-emoji="😀">😀</button><button role="menuitem" data-emoji="😂">😂</button><button role="menuitem" data-emoji="😊">😊</button><button role="menuitem" data-emoji="😍">😍</button><button role="menuitem" data-emoji="🤔">🤔</button><button role="menuitem" data-emoji="😎">😎</button><button role="menuitem" data-emoji="😅">😅</button><button role="menuitem" data-emoji="🙌">🙌</button><button role="menuitem" data-emoji="👍">👍</button><button role="menuitem" data-emoji="👎">👎</button><button role="menuitem" data-emoji="👏">👏</button><button role="menuitem" data-emoji="🙏">🙏</button><button role="menuitem" data-emoji="💪">💪</button><button role="menuitem" data-emoji="👀">👀</button><button role="menuitem" data-emoji="🎉">🎉</button><button role="menuitem" data-emoji="🔥">🔥</button><button role="menuitem" data-emoji="✨">✨</button><button role="menuitem" data-emoji="⭐">⭐</button><button role="menuitem" data-emoji="💡">💡</button><button role="menuitem" data-emoji="✅">✅</button><button role="menuitem" data-emoji="❌">❌</button><button role="menuitem" data-emoji="⚠️">⚠️</button><button role="menuitem" data-emoji="❓">❓</button><button role="menuitem" data-emoji="❗">❗</button><button role="menuitem" data-emoji="📌">📌</button><button role="menuitem" data-emoji="📎">📎</button><button role="menuitem" data-emoji="📝">📝</button><button role="menuitem" data-emoji="📅">📅</button><button role="menuitem" data-emoji="⏰">⏰</button><button role="menuitem" data-emoji="🚀">🚀</button><button role="menuitem" data-emoji="🎯">🎯</button><button role="menuitem" data-emoji="📈">📈</button><button role="menuitem" data-emoji="📉">📉</button><button role="menuitem" data-emoji="💰">💰</button><button role="menuitem" data-emoji="🛒">🛒</button><button role="menuitem" data-emoji="📣">📣</button><button role="menuitem" data-emoji="💬">💬</button><button role="menuitem" data-emoji="📧">📧</button><button role="menuitem" data-emoji="🔗">🔗</button><button role="menuitem" data-emoji="🔒">🔒</button><button role="menuitem" data-emoji="⚙️">⚙️</button><button role="menuitem" data-emoji="🛠️">🛠️</button><button role="menuitem" data-emoji="🐛">🐛</button><button role="menuitem" data-emoji="❤️">❤️</button><button role="menuitem" data-emoji="💚">💚</button><button role="menuitem" data-emoji="👉">👉</button><button role="menuitem" data-emoji="➡️">➡️</button><button role="menuitem" data-emoji="🔍">🔍</button></div>
+
+<div class="sheet-veil" id="shareSheet" hidden>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <h2 id="shareTitle">Share this document</h2>
+    <p class="sub">The whole document is packed into the link itself. Nothing is uploaded, and everyone who opens it gets their own copy to read or edit.</p>
+    <label class="field-label" for="shareLink">Link</label>
+    <div class="copy-row"><input id="shareLink" readonly><button class="btn primary" data-copy="shareLink">Copy link</button></div>
+    <label class="field-label" for="embedCode">Embed on a website</label>
+    <div class="copy-row"><textarea id="embedCode" rows="3" readonly></textarea><button class="btn" data-copy="embedCode">Copy code</button></div>
+    <p class="fine" id="shareNote"></p>
+    <button class="btn" id="shareClose">Done</button>
+  </div>
+</div>
+
+<div class="sheet-veil" id="settingsSheet" hidden>
+  <div class="sheet wide settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <h2 id="settingsTitle">Settings</h2>
+    <p class="sub">Saved on this device.</p>
+
+    <div class="set-group">Reading</div>
+    <div class="set-row"><label for="setSize">Text size</label><span class="set-ctl"><input type="range" id="setSize" min="14" max="22" step="1"><output id="setSizeOut"></output></span></div>
+    <div class="set-row"><label for="setWidth">Page width</label><span class="set-ctl"><select id="setWidth"><option value="640">Narrow</option><option value="760">Normal</option><option value="960">Wide</option><option value="none">Full width</option></select></span></div>
+    <div class="set-row"><label for="setFont">Font</label><span class="set-ctl"><select id="setFont"><option value="sans">Outfit (brand)</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></span></div>
+
+    <div class="set-group">Editor</div>
+    <div class="set-row"><label for="setLines">Line numbers</label><span class="set-ctl"><input type="checkbox" id="setLines"></span></div>
+    <div class="set-row"><label for="setScroll">Sync scrolling</label><span class="set-ctl"><input type="checkbox" id="setScroll"></span></div>
+    <div class="set-row"><label for="setSelect">Sync selection</label><span class="set-ctl"><input type="checkbox" id="setSelect"></span></div>
+
+    <div class="set-group">PDF and print</div>
+    <div class="set-row"><label for="setPaper">Paper</label><span class="set-ctl"><select id="setPaper"><option value="auto">Printer default</option><option value="A4">A4</option><option value="letter">Letter</option></select></span></div>
+    <div class="set-row"><label for="setMargin">Margins</label><span class="set-ctl"><select id="setMargin"><option value="10mm">Narrow</option><option value="18mm">Normal</option><option value="25mm">Wide</option></select></span></div>
+    <div class="set-row"><label for="setPageNo">Page numbers</label><span class="set-ctl"><input type="checkbox" id="setPageNo"></span></div>
+
+    <div class="set-group">Custom CSS</div>
+    <textarea id="setCss" class="css-box" rows="5" spellcheck="false" placeholder="article h1 { color: #272320; }&#10;article p { text-align: justify; }"></textarea>
+    <p class="fine">Applied to the preview, print and Styled HTML export. Style elements inside <code>article</code>.</p>
+
+    <div class="sheet-actions"><button class="btn" id="settingsReset">Reset to defaults</button><button class="btn primary" id="settingsClose">Done</button></div>
+  </div>
 </div>
 
 <div class="sheet-veil" id="installHelp" hidden>
@@ -947,7 +1115,9 @@ function paintHTML(src){
     return;
   }
   var tokens, norm = src.replace(/\r\n?/g, "\n");
-  try{ tokens = window.marked.lexer(norm, { gfm:true, breaks:false }); }
+  /* no options here: passing any replaces marked's defaults, and with them
+     the maths extension (GFM is on by default) */
+  try{ tokens = window.marked.lexer(norm); }
   catch(e){ doc.innerHTML = toHTML(src); return; }
 
   /* Offsets refer to the LF-normalised text, which is also exactly what a
@@ -966,7 +1136,7 @@ function paintHTML(src){
     var list = [tok];
     list.links = tokens.links;
     var html;
-    try{ html = window.marked.parser(list, { gfm:true, breaks:false }); }
+    try{ html = window.marked.parser(list); }
     catch(err){ html = ""; }
     tpl.innerHTML = html;
 
@@ -1003,6 +1173,7 @@ function paintDoc(text){
   decorateCode();
   buildTOC();
   renderMermaid();
+  MathTex.render(doc);
 }
 
 function slug(text, used){
@@ -1029,6 +1200,7 @@ function render(restoreScroll){
   $("closeBtn").hidden = false;
   $("editBtn").hidden = false;
   $("exportBtn").hidden = false;
+  $("shareBtn").hidden = false;
   if(state.editing){
     editor.value = f.text;
     refreshStatus();
@@ -1336,7 +1508,7 @@ async function walkDir(dirHandle, path, out, depth){
 /* ================= session history ================= */
 
 function remember(f){
-  if(!Store.available() || !f) return;
+  if(!Store.available() || !f || document.body.classList.contains("embed")) return;
   var rec = {
     id: f.id,
     name: f.name,
@@ -1551,6 +1723,7 @@ function paintFileList(){
     row.appendChild(x);
     fileList.appendChild(row);
   });
+  paintTabs();
 }
 
 /* Closing only drops the document from this session.
@@ -1593,7 +1766,7 @@ function goHome(msg){
     state.editing = false;
     Sync.clearAll();
     Fmt.closeMenu();
-    document.body.classList.remove("editing", "show-preview");
+    document.body.classList.remove("editing", "v-editor", "v-preview");
     editorPane.hidden = true;
     $("paneTabs").hidden = true;
     $("editBtn").classList.remove("on");
@@ -1611,6 +1784,7 @@ function goHome(msg){
   $("closeBtn").hidden = true;
   $("editBtn").hidden = true;
   $("exportBtn").hidden = true;
+  $("shareBtn").hidden = true;
   crumb.textContent = "";
   meta.textContent = "";
   document.title = BASE_TITLE;
@@ -1782,7 +1956,7 @@ document.addEventListener("keydown", function(e){
   var mod = e.ctrlKey || e.metaKey;
 
   if(Fmt.shortcut(e)) return;
-  if(e.key === "Escape" && Fmt.closeMenu()) return;
+  if(e.key === "Escape" && (Fmt.closeMenu() || closeTopLayer())) return;
   if(e.key === "Escape" && Export.close()){ $("exportBtn").focus(); return; }
 
   if(mod && e.key.toLowerCase() === "s"){
@@ -1847,6 +2021,7 @@ function refreshStatus(){
   var f = state.files[state.active];
   if(!f || !state.editing) return setStatus("", "");
   $("saveCopyBtn").textContent = (f.source === "new" && !f.handle) ? "Save file" : "Save a copy";
+  markTabDirty();
   if(f.dirty) return setStatus("dirty", canWrite(f) ? "Saving…" : "Unsaved");
   if(canWrite(f)) return setStatus("saved", "Saved");
   if(f.source === "new") return setStatus("readonly", "Not saved yet");
@@ -1858,15 +2033,13 @@ function enterEdit(){
   if(!f) return;
   state.editing = true;
   document.body.classList.add("editing");
-  document.body.classList.remove("show-preview");
   editorPane.hidden = false;
   $("paneTabs").hidden = false;
   doc.hidden = false;
   $("editBtn").classList.add("on");
   $("editBtn").title = "Done editing";
   editor.value = f.text;
-  $("tabEdit").classList.add("on");
-  $("tabPreview").classList.remove("on");
+  setView(Prefs.get().view || "split");
   refreshStatus();
   Sync.reset();
   if(f.source === "new" && !f.handle){
@@ -1883,7 +2056,7 @@ function exitEdit(){
   if(!state.editing) return;
   var f = state.files[state.active];
   state.editing = false;
-  document.body.classList.remove("editing", "show-preview");
+  document.body.classList.remove("editing", "v-editor", "v-preview");
   editorPane.hidden = true;
   $("paneTabs").hidden = true;
   $("editBtn").classList.remove("on");
@@ -2068,7 +2241,7 @@ var Sync = (function(){
     for(var i=0;i<list.length;i++){
       var w = document.createTreeWalker(list[i], NodeFilter.SHOW_TEXT, {
         acceptNode: function(t){
-          return t.parentElement.closest(".copy, .mermaid, svg, script, style")
+          return t.parentElement.closest(".copy, .mermaid, .math, svg, script, style")
             ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
         }
       });
@@ -2189,6 +2362,7 @@ var Sync = (function(){
     var box = doc.getBoundingClientRect();
     if(!box.height) return;
     if(rect.top < box.top + 30 || rect.bottom > box.bottom - 30){
+      Layout.hold(900);
       doc.scrollTo({ top: doc.scrollTop + (rect.top - box.top) - box.height / 3, behavior:"smooth" });
     }
   }
@@ -2222,6 +2396,7 @@ var Sync = (function(){
     if(!mark || !editor.clientHeight) return;
     var top = mark.offsetTop, h = editor.clientHeight;
     if(top < editor.scrollTop + 20 || top + mark.offsetHeight > editor.scrollTop + h - 30){
+      Layout.hold(900);
       editor.scrollTo({ top: Math.max(0, top - h / 3), behavior:"smooth" });
     }
   }
@@ -2239,7 +2414,7 @@ var Sync = (function(){
       if(HAS_HL) CSS.highlights.delete("md-sync");
       var n = firstBlockFrom(s);
       markBlock(n);
-      if(litBlock[0]) revealInPreview(litBlock[0].getBoundingClientRect());
+      if(litBlock[0] && !Layout.syncOn()) revealInPreview(litBlock[0].getBoundingClientRect());
       return;
     }
 
@@ -2335,6 +2510,7 @@ var Sync = (function(){
     new ResizeObserver(function(){
       sizeMirror();
       if(mirrorRange) paintMirror(mirrorRange.s, mirrorRange.e, mirrorRange.soft);
+      Layout.refresh();
     }).observe(editor);
   }
 
@@ -2374,11 +2550,13 @@ var Sync = (function(){
       clearPreview();
       clearMirror();
       sizeMirror();
+      Layout.refresh();
     },
     clearAll: function(){ lastSel = null; clearPreview(); clearMirror(); },
     /* the preview was rebuilt while typing */
     afterRender: function(){
       lastSel = null;
+      Layout.refresh();
       if(document.activeElement === editor) fromEditor(true);
       else if(mirrorRange) paintMirror(mirrorRange.s, mirrorRange.e, mirrorRange.soft);
     },
@@ -2620,6 +2798,24 @@ var Fmt = (function(){
     return true;
   }
 
+  /* strips inline marks, and heading, list and quote markers, from the
+     selection or the current line */
+  function clearFormatting(){
+    var c = cur(), s = c.s, e = c.e;
+    if(s === e){ var sp = lineSpan(c.v, s, e); s = sp.a; e = sp.z; }
+    var t = c.v.slice(s, e);
+    var out = t
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "$2")
+      .replace(/(\*|_)(?=\S)([\s\S]*?\S)\1/g, "$2")
+      .replace(/~~([\s\S]*?)~~/g, "$1")
+      .replace(/`([^`\n]+)`/g, "$1")
+      .replace(/^([ \t]*)(?:#{1,6}[ \t]+|>[ \t]?|[-*+][ \t]+(?:\[[ xX]\][ \t]+)?|\d+[.)][ \t]+)/gm, "$1");
+    if(out === t){ editor.focus(); return; }
+    replace(s, e, out, s, s + out.length);
+  }
+
   function openMenu(){
     var r = headingBtn.getBoundingClientRect(), lvl = headingLevelAt();
     Array.prototype.forEach.call(menu.querySelectorAll("button"), function(b){
@@ -2660,6 +2856,17 @@ var Fmt = (function(){
       case "codeblock": return codeBlock();
       case "table": return insertBlock("| Column | Column |\n| --- | --- |\n| Cell | Cell |", 2, 8);
       case "hr": return insertBlock("---", 3, 3);
+      case "emoji": return Emoji.toggle();
+      case "clear": return clearFormatting();
+      case "math": {
+        var c = cur();
+        if(c.s !== c.e && c.v.slice(c.s, c.e).indexOf("\n") < 0) return wrap("$", "x");
+        if(c.s !== c.e){
+          var sp = lineSpan(c.v, c.s, c.e), body = c.v.slice(sp.a, sp.z);
+          return replace(sp.a, sp.z, "$$\n" + body + "\n$$", sp.a + 3, sp.a + 3 + body.length);
+        }
+        return insertBlock("$$\n\n$$", 3, 3);
+      }
     }
   }
 
@@ -2734,17 +2941,634 @@ $("editBtn").addEventListener("click", function(){
   if(state.editing) exitEdit(); else enterEdit();
 });
 $("saveCopyBtn").addEventListener("click", saveCopy);
-$("tabEdit").addEventListener("click", function(){
-  document.body.classList.remove("show-preview");
-  this.classList.add("on"); $("tabPreview").classList.remove("on");
-  Sync.refresh();
+/* Edit, Split or Preview. On a narrow screen Split shows the source. */
+var NARROW = window.matchMedia ? window.matchMedia("(max-width:1000px)") : { matches:false };
+function setView(v){
+  state.view = v;
+  document.body.classList.toggle("v-editor", v === "editor");
+  document.body.classList.toggle("v-preview", v === "preview");
+  var shown = (v === "split" && NARROW.matches) ? "editor" : v;
+  Array.prototype.forEach.call($("paneTabs").querySelectorAll("button"), function(b){
+    b.classList.toggle("on", b.dataset.view === shown);
+  });
+  if(v !== "preview") Fmt.closeMenu();
+  if(Prefs.get().view !== v) Prefs.set({ view:v });
+  setTimeout(function(){ Sync.refresh(); Layout.refresh(); }, 0);
+}
+$("paneTabs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-view]");
+  if(b) setView(b.dataset.view);
 });
-$("tabPreview").addEventListener("click", function(){
-  document.body.classList.add("show-preview");
-  this.classList.add("on"); $("tabEdit").classList.remove("on");
-  Fmt.closeMenu();
-  Sync.refresh();
+if(NARROW.addEventListener) NARROW.addEventListener("change", function(){ if(state.editing) setView(state.view); });
+
+/* ================= preferences ================= */
+/* Reading, editor and print settings, kept in localStorage. */
+
+var Prefs = (function(){
+  var KEY = "digitum-md-settings";
+  var DEF = { size:17, width:"760", font:"sans", lines:true, scroll:true,
+              paper:"auto", margin:"18mm", pageNo:false, css:"", view:"split" };
+  var cur = {};
+  Object.keys(DEF).forEach(function(k){ cur[k] = DEF[k]; });
+  try{
+    var saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+    Object.keys(DEF).forEach(function(k){ if(k in saved) cur[k] = saved[k]; });
+  }catch(e){}
+
+  function styleTag(id, css){
+    var el = document.getElementById(id);
+    if(!el){ el = document.createElement("style"); el.id = id; document.head.appendChild(el); }
+    if(el.textContent !== css) el.textContent = css;
+  }
+
+  function apply(){
+    var r = document.documentElement.style;
+    r.setProperty("--read-size", cur.size + "px");
+    r.setProperty("--read-width", cur.width === "none" ? "none" : cur.width + "px");
+    r.setProperty("--read-font", cur.font === "serif" ? "Georgia,'Times New Roman',serif"
+                               : cur.font === "mono" ? "var(--mono)" : "var(--prose)");
+    styleTag("pageStyle", "@page{" + (cur.paper !== "auto" ? "size:" + cur.paper + ";" : "") +
+      "margin:" + cur.margin + ";" +
+      (cur.pageNo ? "@bottom-center{content:counter(page) \" / \" counter(pages);font-family:Outfit,sans-serif;font-size:9pt;color:#6B645C}" : "") + "}");
+    styleTag("userCss", cur.css || "");
+    $("editorWrap").classList.toggle("lines", !!cur.lines);
+    $("scrollToggle").checked = !!cur.scroll;
+  }
+
+  function set(patch){
+    Object.keys(patch).forEach(function(k){ cur[k] = patch[k]; });
+    try{ localStorage.setItem(KEY, JSON.stringify(cur)); }catch(e){}
+    apply();
+  }
+
+  apply();
+  return {
+    get: function(){ return cur; },
+    set: set,
+    reset: function(){
+      var keepView = cur.view, d = {};
+      Object.keys(DEF).forEach(function(k){ d[k] = DEF[k]; });
+      d.view = keepView;
+      set(d);
+    }
+  };
+})();
+
+/* ================= settings sheet ================= */
+
+var Settings = (function(){
+  var sheet = $("settingsSheet");
+  var F = { size:$("setSize"), width:$("setWidth"), font:$("setFont"), lines:$("setLines"),
+            scroll:$("setScroll"), paper:$("setPaper"), margin:$("setMargin"),
+            pageNo:$("setPageNo"), css:$("setCss") };
+
+  function fill(){
+    var p = Prefs.get();
+    F.size.value = p.size; $("setSizeOut").textContent = p.size + "px";
+    F.width.value = p.width; F.font.value = p.font;
+    F.lines.checked = !!p.lines; F.scroll.checked = !!p.scroll;
+    F.paper.value = p.paper; F.margin.value = p.margin; F.pageNo.checked = !!p.pageNo;
+    F.css.value = p.css || "";
+    $("setSelect").checked = $("syncToggle").checked;
+  }
+
+  function read(){
+    return {
+      size: +F.size.value, width: F.width.value, font: F.font.value,
+      lines: F.lines.checked, scroll: F.scroll.checked,
+      paper: F.paper.value, margin: F.margin.value, pageNo: F.pageNo.checked,
+      css: F.css.value
+    };
+  }
+
+  var cssTimer;
+  Object.keys(F).forEach(function(k){
+    F[k].addEventListener(k === "css" ? "input" : (F[k].type === "range" ? "input" : "change"), function(){
+      if(k === "css"){
+        clearTimeout(cssTimer);
+        cssTimer = setTimeout(function(){ Prefs.set(read()); }, 250);
+        return;
+      }
+      Prefs.set(read());
+      $("setSizeOut").textContent = F.size.value + "px";
+      if(k === "lines" || k === "size" || k === "width" || k === "font") Layout.refresh();
+    });
+  });
+  $("setSelect").addEventListener("change", function(){
+    var t = $("syncToggle");
+    t.checked = this.checked;
+    t.dispatchEvent(new Event("change"));
+  });
+
+  function open(){ fill(); sheet.hidden = false; F.size.focus(); }
+  function close(){ if(sheet.hidden) return false; sheet.hidden = true; return true; }
+
+  $("settingsBtn").addEventListener("click", open);
+  $("settingsClose").addEventListener("click", close);
+  $("settingsReset").addEventListener("click", function(){ Prefs.reset(); fill(); Layout.refresh(); toast("Settings reset"); });
+  sheet.addEventListener("click", function(e){ if(e.target === sheet) close(); });
+  $("scrollToggle").addEventListener("change", function(){ Prefs.set({ scroll:this.checked }); });
+
+  return { open:open, close:close };
+})();
+
+/* ================= tabs and full screen ================= */
+
+function paintTabs(){
+  var wrap = $("docTabs"), list = $("tabsList");
+  wrap.hidden = state.files.length < 1 || document.body.classList.contains("embed");
+  list.innerHTML = "";
+  state.files.forEach(function(f, i){
+    var t = document.createElement("div");
+    t.className = "doc-tab" + (i === state.active ? " active" : "");
+    t.setAttribute("role", "tab");
+    t.setAttribute("aria-selected", i === state.active ? "true" : "false");
+    t.tabIndex = 0;
+    t.title = (f.dir ? f.dir + "/" : "") + f.name;
+    var dot = document.createElement("span");
+    dot.className = "t-dot";
+    dot.hidden = !f.dirty;
+    var n = document.createElement("span");
+    n.className = "t-name";
+    n.textContent = f.name;
+    var x = document.createElement("button");
+    x.className = "t-x";
+    x.textContent = "×";
+    x.title = "Close " + f.name;
+    x.setAttribute("aria-label", "Close " + f.name);
+    x.addEventListener("click", function(e){ e.stopPropagation(); closeFile(i); });
+    t.addEventListener("click", function(){ if(i !== state.active){ state.active = i; render(false); } });
+    t.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); t.click(); } });
+    t.addEventListener("auxclick", function(e){ if(e.button === 1){ e.preventDefault(); closeFile(i); } });
+    t.appendChild(dot); t.appendChild(n); t.appendChild(x);
+    list.appendChild(t);
+  });
+  var act = list.querySelector(".active");
+  if(act && act.scrollIntoView) act.scrollIntoView({ block:"nearest", inline:"nearest" });
+  document.documentElement.style.setProperty("--topbar-h", document.querySelector(".topbar").offsetHeight + "px");
+}
+
+/* the unsaved dot on the active tab, cheap enough to run on every keystroke */
+function markTabDirty(){
+  var f = state.files[state.active], t = $("tabsList").querySelector(".doc-tab.active .t-dot");
+  if(t && f) t.hidden = !f.dirty;
+}
+
+$("tabNew").addEventListener("click", function(){ newFile(); });
+
+if(document.fullscreenEnabled){
+  $("fullBtn").hidden = false;
+  $("fullBtn").addEventListener("click", function(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(function(){});
+  });
+  document.addEventListener("fullscreenchange", function(){
+    var on = !!document.fullscreenElement;
+    $("fullBtn").classList.toggle("on", on);
+    $("fullBtn").title = on ? "Leave full screen" : "Full screen (F11)";
+  });
+}
+
+/* ================= editor layout: line numbers and scroll sync ================= */
+/* A hidden copy of the editor text is laid out at the editor's width with
+   markers at every line start and every preview block start. That gives the
+   y position of each, which drives the line number gutter and lets the two
+   panes scroll together block by block. */
+
+var Layout = (function(){
+  var meas = $("editorMeasure"), wrap = $("editorWrap"), inner = $("gutterInner");
+  var lay = null;          /* { lines:[offsets], lineTops:[], blockTops:[] } */
+  var pairs = null, pairsAt = 0;
+  var lockSide = null, lockUntil = 0, holdUntil = 0;
+  var timer = 0, curLine = -1;
+
+  function px(v, d){ var n = parseFloat(v); return isNaN(n) ? d : n; }
+
+  function measure(text, offsets){
+    var cs = getComputedStyle(editor);
+    var lh = px(cs.lineHeight, 23.6), pt = px(cs.paddingTop, 16);
+    meas.style.width = editor.clientWidth + "px";
+    meas.textContent = "";
+    var frag = document.createDocumentFragment(), last = 0, spans = [];
+    for(var i=0;i<offsets.length;i++){
+      var o = offsets[i];
+      if(o > last) frag.appendChild(document.createTextNode(text.slice(last, o)));
+      var sp = document.createElement("span");
+      frag.appendChild(sp);
+      spans.push(sp);
+      last = o;
+    }
+    frag.appendChild(document.createTextNode(text.slice(last) + "\n"));
+    meas.appendChild(frag);
+    var tops = spans.map(function(sp){
+      /* snap to the line grid: an empty inline box sits mid-line */
+      return pt + Math.round((sp.offsetTop - pt) / lh) * lh;
+    });
+    meas.textContent = "";
+    return tops;
+  }
+
+  function build(){
+    pairs = null;
+    if(!state.editing || !editor.clientWidth){ lay = null; inner.textContent = ""; return; }
+    var text = editor.value, lines = [0];
+    for(var i=0;i<text.length;i++){ if(text.charCodeAt(i) === 10) lines.push(i + 1); }
+    var withLines = wrap.classList.contains("lines");
+    var blocks = state.blocks.map(function(b){ return Math.min(b.s, text.length); });
+    var want = (withLines ? lines : []).concat(blocks).sort(function(a, b){ return a - b; });
+    var uniq = [];
+    for(var k=0;k<want.length;k++){ if(!k || want[k] !== want[k-1]) uniq.push(want[k]); }
+    var tops = measure(text, uniq), at = {};
+    uniq.forEach(function(o, idx){ at[o] = tops[idx]; });
+    lay = {
+      lines: lines,
+      lineTops: withLines ? lines.map(function(o){ return at[o]; }) : null,
+      blockTops: blocks.map(function(o){ return at[o]; })
+    };
+    curLine = -1;
+    paintGutter();
+  }
+
+  function paintGutter(){
+    if(!lay || !lay.lineTops){ inner.textContent = ""; return; }
+    var html = new Array(lay.lineTops.length);
+    for(var i=0;i<lay.lineTops.length;i++){
+      html[i] = '<span style="top:' + lay.lineTops[i] + 'px">' + (i + 1) + '</span>';
+    }
+    inner.innerHTML = html.join("");
+    inner.style.transform = "translateY(" + (-editor.scrollTop) + "px)";
+    markLine();
+  }
+
+  function markLine(){
+    if(!lay || !lay.lineTops) return;
+    var pos = editor.selectionStart, lo = 0, hi = lay.lines.length - 1;
+    while(lo < hi){ var mid = (lo + hi + 1) >> 1; if(lay.lines[mid] <= pos) lo = mid; else hi = mid - 1; }
+    if(lo === curLine) return;
+    var kids = inner.children;
+    if(kids[curLine]) kids[curLine].classList.remove("cur");
+    if(kids[lo]) kids[lo].classList.add("cur");
+    curLine = lo;
+  }
+
+  function syncOn(){
+    return state.editing && Prefs.get().scroll && state.view === "split" && !NARROW.matches;
+  }
+
+  /* matching scroll positions, one pair per preview block */
+  function getPairs(){
+    if(pairs && Date.now() - pairsAt < 600) return pairs;
+    if(!lay) return null;
+    var cs = getComputedStyle(editor), dcs = getComputedStyle(doc);
+    var ept = px(cs.paddingTop, 16), dpt = px(dcs.paddingTop, 28);
+    var E = [0], P = [0];
+    for(var i=0;i<state.blocks.length;i++){
+      var el = doc.querySelector('[data-b="' + i + '"]');
+      if(!el || lay.blockTops[i] == null) continue;
+      var e = lay.blockTops[i] - ept, p = el.offsetTop - dpt;
+      if(e > E[E.length-1] + 1 && p > P[P.length-1] + 1){ E.push(e); P.push(p); }
+    }
+    var eMax = editor.scrollHeight - editor.clientHeight, pMax = doc.scrollHeight - doc.clientHeight;
+    while(E.length > 1 && (E[E.length-1] >= eMax || P[P.length-1] >= pMax)){ E.pop(); P.pop(); }
+    E.push(Math.max(eMax, E[E.length-1] + 1)); P.push(Math.max(pMax, P[P.length-1] + 1));
+    pairs = { E:E, P:P };
+    pairsAt = Date.now();
+    return pairs;
+  }
+
+  function interp(y, A, B){
+    if(y <= A[0]) return B[0];
+    var lo = 0, hi = A.length - 1;
+    if(y >= A[hi]) return B[hi];
+    while(hi - lo > 1){ var mid = (lo + hi) >> 1; if(A[mid] <= y) lo = mid; else hi = mid; }
+    var t = (y - A[lo]) / ((A[hi] - A[lo]) || 1);
+    return B[lo] + t * (B[hi] - B[lo]);
+  }
+
+  editor.addEventListener("scroll", function(){
+    inner.style.transform = "translateY(" + (-editor.scrollTop) + "px)";
+    if(!syncOn() || Date.now() < holdUntil) return;
+    if(lockSide === "preview" && Date.now() < lockUntil) return;
+    var pr = getPairs();
+    if(!pr) return;
+    lockSide = "editor"; lockUntil = Date.now() + 160;
+    doc.scrollTop = interp(editor.scrollTop, pr.E, pr.P);
+  }, { passive:true });
+
+  doc.addEventListener("scroll", function(){
+    if(!syncOn() || Date.now() < holdUntil) return;
+    if(lockSide === "editor" && Date.now() < lockUntil) return;
+    var pr = getPairs();
+    if(!pr) return;
+    lockSide = "preview"; lockUntil = Date.now() + 160;
+    editor.scrollTop = interp(doc.scrollTop, pr.P, pr.E);
+  }, { passive:true });
+
+  ["keyup", "mouseup", "select", "input"].forEach(function(t){
+    editor.addEventListener(t, function(){ if(state.editing) markLine(); });
+  });
+
+  return {
+    refresh: function(){
+      clearTimeout(timer);
+      timer = setTimeout(build, 60);
+    },
+    /* stop the panes following each other while a reveal animates */
+    hold: function(ms){ holdUntil = Date.now() + (ms || 800); },
+    syncOn: syncOn
+  };
+})();
+
+/* ================= math ================= */
+/* $inline$ and $$display$$ maths, drawn with KaTeX, which only loads when a
+   document actually contains maths. */
+
+var MathTex = (function(){
+  var BASE = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/";
+  var loading = null;
+  function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  if(window.marked && window.marked.use){
+    window.marked.use({ extensions: [
+      {
+        name: "mathBlock", level: "block",
+        start: function(src){ var i = src.indexOf("$$"); return i < 0 ? undefined : i; },
+        tokenizer: function(src){
+          var m = /^\$\$([\s\S]+?)\$\$[ \t]*(?:\n+|$)/.exec(src);
+          if(m) return { type:"mathBlock", raw:m[0], text:m[1].trim() };
+        },
+        renderer: function(t){ return '<div class="math math-block" data-tex="' + esc(t.text) + '">' + esc(t.text) + '</div>\n'; }
+      },
+      {
+        name: "mathInline", level: "inline",
+        start: function(src){ var i = src.indexOf("$"); return i < 0 ? undefined : i; },
+        tokenizer: function(src){
+          var m = /^\$\$([^\n$]+?)\$\$/.exec(src);
+          if(m) return { type:"mathInline", raw:m[0], text:m[1].trim(), display:true };
+          m = /^\$(?![\s$])((?:\\.|[^\\$\n])+?)(?<!\s)\$(?!\d)/.exec(src);
+          if(m) return { type:"mathInline", raw:m[0], text:m[1], display:false };
+        },
+        renderer: function(t){
+          return '<span class="math' + (t.display ? " math-display" : "") + '" data-tex="' + esc(t.text) + '">' + esc(t.text) + '</span>';
+        }
+      }
+    ]});
+  }
+
+  function load(){
+    if(window.katex) return Promise.resolve();
+    if(!loading){
+      var css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = BASE + "katex.min.css";
+      document.head.appendChild(css);
+      loading = new Promise(function(res, rej){
+        var s = document.createElement("script");
+        s.src = BASE + "katex.min.js";
+        s.onload = res;
+        s.onerror = function(){ loading = null; rej(new Error("KaTeX did not load")); };
+        document.head.appendChild(s);
+      });
+    }
+    return loading;
+  }
+
+  function render(root){
+    var els = root.querySelectorAll(".math:not(.done)");
+    if(!els.length) return;
+    Array.prototype.forEach.call(els, function(el){ el.classList.add("pending"); });
+    load().then(function(){
+      Array.prototype.forEach.call(els, function(el){
+        if(!el.isConnected) return;
+        try{
+          window.katex.render(el.getAttribute("data-tex"), el, {
+            displayMode: el.classList.contains("math-block") || el.classList.contains("math-display"),
+            throwOnError: false
+          });
+          el.classList.add("done");
+        }catch(e){ el.classList.add("math-error"); }
+        el.classList.remove("pending");
+      });
+      state.blockGen++;
+      Layout.refresh();
+    }, function(){
+      Array.prototype.forEach.call(els, function(el){ el.classList.remove("pending"); });
+      toast("Could not load the maths renderer");
+    });
+  }
+
+  return { render:render, cssHref: BASE + "katex.min.css" };
+})();
+
+/* ================= share and embed ================= */
+/* The document is deflated and base64url encoded into the link's #fragment,
+   which browsers never send to a server. */
+
+var Share = (function(){
+  var sheet = $("shareSheet");
+
+  function b64url(bytes){
+    var s = "";
+    for(var i=0;i<bytes.length;i+=0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function unb64(str){
+    str = str.replace(/-/g, "+").replace(/_/g, "/");
+    while(str.length % 4) str += "=";
+    var bin = atob(str), out = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function encode(text){
+    if(window.CompressionStream){
+      var stream = new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      return new Response(stream).arrayBuffer().then(function(buf){ return "z" + b64url(new Uint8Array(buf)); });
+    }
+    return Promise.resolve("u" + b64url(new TextEncoder().encode(text)));
+  }
+  function decode(data){
+    var bytes = unb64(data.slice(1));
+    if(data.charAt(0) === "z"){
+      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return new Response(stream).text();
+    }
+    return Promise.resolve(new TextDecoder().decode(bytes));
+  }
+  function base(){ return location.origin + location.pathname.replace(/index\.html$/, ""); }
+  function titleFrom(text){
+    var m = text.match(/^#{1,6}[ \t]+(.+)$/m);
+    return (m ? m[1].replace(/[\\/:*?"<>|#]+/g, "").trim().slice(0, 60) : "") || "Shared document";
+  }
+
+  function open(){
+    var f = state.files[state.active];
+    if(!f) return;
+    var text = state.editing ? editor.value : f.text;
+    encode(text).then(function(data){
+      var link = base() + "#md=" + data, embed = base() + "#embed=" + data;
+      $("shareLink").value = link;
+      $("embedCode").value = '<iframe src="' + embed + '" width="100%" height="600" loading="lazy" ' +
+        'style="border:1px solid #D6CFC2;border-radius:10px" title="' + titleFrom(text).replace(/"/g, "&quot;") + '"></iframe>';
+      $("shareNote").textContent = link.length > 8000
+        ? "This link is " + Math.round(link.length / 1000) + "k characters long. Most browsers open it fine, but some chat apps and email clients cut long links short, so for very long documents export a file instead."
+        : "Changes you make after sharing are not in the link. Share again to send the new version.";
+      sheet.hidden = false;
+      $("shareLink").focus();
+      $("shareLink").select();
+    }).catch(function(){ toast("Could not create a link for this document"); });
+  }
+  function close(){ if(sheet.hidden) return false; sheet.hidden = true; return true; }
+
+  Array.prototype.forEach.call(sheet.querySelectorAll("[data-copy]"), function(b){
+    b.addEventListener("click", function(){
+      var el = $(b.getAttribute("data-copy"));
+      var done = function(){ toast("Copied"); var t = b.textContent; b.textContent = "Copied"; setTimeout(function(){ b.textContent = t; }, 1400); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(el.value).then(done, function(){ el.select(); document.execCommand("copy"); done(); });
+      }else{ el.select(); document.execCommand("copy"); done(); }
+    });
+  });
+  $("shareBtn").addEventListener("click", open);
+  $("shareClose").addEventListener("click", close);
+  sheet.addEventListener("click", function(e){ if(e.target === sheet) close(); });
+
+  /* opening a shared link */
+  function boot(){
+    var m = /^#(md|embed)=([zu][A-Za-z0-9_-]+)$/.exec(location.hash);
+    if(!m) return false;
+    if(m[1] === "embed"){
+      document.body.classList.add("embed");
+      $("embedBadge").href = base() + "#md=" + m[2];
+    }
+    decode(m[2]).then(function(text){
+      var name = titleFrom(text) + ".md";
+      openText(name, text, "s:" + m[2].slice(0, 40));
+      if(m[1] === "md") toast("Opened a shared copy. Edits stay on this device");
+    }).catch(function(){ toast("That share link is damaged or incomplete"); });
+    return true;
+  }
+  window.addEventListener("hashchange", boot);
+
+  return { open:open, close:close, boot:boot };
+})();
+
+/* ================= emoji and cheat sheet ================= */
+
+var Emoji = (function(){
+  var menu = $("emojiMenu"), btn = $("emojiBtn");
+  function open(){
+    var r = btn.getBoundingClientRect();
+    menu.hidden = false;
+    menu.style.top = (r.bottom + 4) + "px";
+    menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8)) + "px";
+  }
+  function close(){ if(menu.hidden) return false; menu.hidden = true; return true; }
+  menu.addEventListener("mousedown", function(e){ e.preventDefault(); });
+  menu.addEventListener("click", function(e){
+    var b = e.target.closest("[data-emoji]");
+    if(!b) return;
+    var t = b.getAttribute("data-emoji"), s = editor.selectionStart, en = editor.selectionEnd;
+    close();
+    Fmt.replace(s, en, t, s + t.length, s + t.length);
+  });
+  document.addEventListener("mousedown", function(e){
+    if(!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close();
+  });
+  window.addEventListener("resize", close);
+  return { toggle: function(){ if(!close()) open(); }, close:close };
+})();
+
+var CHEAT_SHEET = [
+  "# Markdown cheat sheet",
+  "",
+  "Everything below is live: edit it on the left and watch the preview. Press `Ctrl E` to start editing.",
+  "",
+  "## Text",
+  "",
+  "**Bold** with `**two stars**`, *italic* with `*one*`, ~~struck~~ with `~~tildes~~`, `code` with backticks.",
+  "",
+  "A [link](https://digitum.marketing) is `[text](url)`, and an image is `![alt text](image.png)`.",
+  "",
+  "## Headings",
+  "",
+  "`# Heading 1`, `## Heading 2`, and so on down to `###### Heading 6`.",
+  "",
+  "## Lists",
+  "",
+  "- Bullets start with `-`",
+  "  - Indent two spaces to nest",
+  "1. Numbered items start with `1.`",
+  "2. The numbers can all be `1.`; they count up anyway",
+  "",
+  "- [x] A checklist item that is done: `- [x]`",
+  "- [ ] One that is not: `- [ ]`",
+  "",
+  "## Quotes and dividers",
+  "",
+  "> Start a line with `>` to quote it.",
+  "",
+  "Three dashes on their own line make a divider:",
+  "",
+  "---",
+  "",
+  "## Code",
+  "",
+  "Fence a block with three backticks and name the language for colours:",
+  "",
+  "```js",
+  "function greet(name) {",
+  "  return `Hello, ${name}`;",
+  "}",
+  "```",
+  "",
+  "## Tables",
+  "",
+  "| Channel | Leads | Cost |",
+  "| --- | ---: | ---: |",
+  "| SEO | 120 | $0 |",
+  "| Ads | 85 | $900 |",
+  "",
+  "A colon on the right of `---:` right-aligns a column.",
+  "",
+  "## Maths",
+  "",
+  "Inline maths sits between single dollars, like $E = mc^2$. A display equation goes between double dollars:",
+  "",
+  "$$",
+  "\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}",
+  "$$",
+  "",
+  "## Diagrams",
+  "",
+  "A `mermaid` code block draws a diagram:",
+  "",
+  "```mermaid",
+  "graph LR",
+  "  Visit --> Lead --> Customer",
+  "```",
+  "",
+  "## Shortcuts",
+  "",
+  "| Keys | Does |",
+  "| --- | --- |",
+  "| `Ctrl B` / `Ctrl I` / `Ctrl K` | Bold, italic, link |",
+  "| `Ctrl Alt 1` to `6` | Heading level |",
+  "| `Ctrl Shift 7` / `8` / `9` | Numbered, bulleted, checklist |",
+  "| `Ctrl S` | Save |",
+  "| `Ctrl E` | Edit or stop editing |",
+  "| `N` | New file |",
+  ""
+].join("\n");
+
+$("cheatBtn").addEventListener("click", function(){
+  document.body.classList.remove("rail-open");
+  openText("Markdown cheat sheet.md", CHEAT_SHEET, "t:cheatsheet");
 });
+
+/* closes whichever popover or sheet is on top; used by Escape */
+function closeTopLayer(){
+  return Emoji.close() || Settings.close() || Share.close();
+}
 
 /* ================= export ================= */
 /* Markdown, plain HTML, styled HTML, PDF (through the print dialog, so the
@@ -2898,7 +3722,10 @@ var Export = (function(){
     /* a shared file should not look like a form someone can fill in */
     Array.prototype.forEach.call(c.querySelectorAll("li.task input"), function(i){ i.setAttribute("disabled", ""); });
     return inlineImages(c).then(function(){
-      var head = FONTS + '<style>\n' + STYLED_CSS + '\n</style>\n';
+      var head = FONTS +
+        (c.querySelector(".katex") ? '<link rel="stylesheet" href="' + MathTex.cssHref + '">\n' : "") +
+        '<style>\n' + STYLED_CSS + '\n</style>\n' +
+        (Prefs.get().css ? '<style>\n' + Prefs.get().css + '\n</style>\n' : "");
       var body = '<article>\n' + c.innerHTML + '\n</article>';
       download(new Blob([page(titleOf(f), head, body)], { type:"text/html;charset=utf-8" }), base(f) + ".html");
     });
@@ -2955,6 +3782,34 @@ var Export = (function(){
     });
   }
 
+  /* rich text for Gmail, Docs and WordPress, with plain text as the fallback */
+  function copyRich(f){
+    var c = cleanPreview();
+    return inlineImages(c).then(function(){
+      var html = c.innerHTML, plain = c.innerText || c.textContent;
+      if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        return navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([html], { type:"text/html" }),
+          "text/plain": new Blob([plain], { type:"text/plain" })
+        })]).then(function(){ toast("Copied. Paste it into your email or document"); });
+      }
+      var box = document.createElement("div");
+      box.contentEditable = "true";
+      box.style.cssText = "position:fixed;left:-9999px;top:0";
+      box.innerHTML = html;
+      document.body.appendChild(box);
+      var r = document.createRange(); r.selectNodeContents(box);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      document.execCommand("copy");
+      sel.removeAllRanges(); box.remove();
+      toast("Copied. Paste it into your email or document");
+    });
+  }
+
+  function copyHTML(f){
+    return navigator.clipboard.writeText(toHTML(f.text)).then(function(){ toast("HTML copied"); });
+  }
+
   function run(kind){
     close();
     var f = current();
@@ -2971,7 +3826,10 @@ var Export = (function(){
           : kind === "html" ? asHTML(f)
           : kind === "styled" ? asStyledHTML(f)
           : kind === "pdf" ? asPDF(f)
-          : kind === "png" ? asPNG(f) : null;
+          : kind === "png" ? asPNG(f)
+          : kind === "copy" ? copyRich(f)
+          : kind === "copyhtml" ? copyHTML(f)
+          : kind === "print" ? window.print() : null;
     }catch(err){ job = Promise.reject(err); }
     Promise.resolve(job).catch(function(err){
       toast("Export failed. " + (err && err.message ? err.message : ""));
@@ -3259,7 +4117,7 @@ if(window.launchQueue && window.launchQueue.setConsumer){
 paintRecents();
 
 var src = new URLSearchParams(window.location.search).get("src");
-if(src) loadURL(src);
+if(!Share.boot() && src) loadURL(src);
 })();
 </script>
 </body>

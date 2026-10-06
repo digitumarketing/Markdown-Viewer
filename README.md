@@ -96,7 +96,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v8`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v9`) to force old caches out.
 
 ## Editing and saving
 
@@ -190,6 +190,31 @@ the current document, including unsaved edits:
 PNG uses `html-to-image` (loaded from jsDelivr on first use), so the browser
 paints it exactly like the preview. Very long documents are rendered at a
 lower pixel ratio to stay inside browser canvas limits.
+
+## More tools
+
+- **Tabs.** Every open file gets a tab under the top bar; `+` starts a new
+  file, middle-click closes a tab, and a dot marks unsaved changes.
+- **Edit / Split / Preview.** The switch in the top bar while editing. Split
+  is the default; on narrow screens Split shows the source.
+- **Sync scrolling.** In Split view the two panes scroll together, block by
+  block ("Scroll" in the editor bar, or Settings).
+- **Line numbers** in the editor gutter (Settings).
+- **Maths.** `$inline$` and `$$display$$` LaTeX, drawn with KaTeX, which
+  loads from jsDelivr only when a document contains maths. Prices like
+  "$5 and $10" are left alone.
+- **Share and embed.** The share button packs the whole document into the
+  link's `#md=` fragment (deflate + base64url), so nothing is uploaded and
+  each recipient gets their own editable copy. The embed code uses
+  `#embed=`, which shows only the document plus a small "Open in" badge.
+- **Copy formatted text / Copy HTML code / Print** in the export menu. The
+  formatted copy pastes into Gmail, Google Docs and WordPress.
+- **Settings** (gear): text size, page width, font, line numbers, sync
+  scrolling and selection, PDF paper size, margins and page numbers, and
+  custom CSS that also applies to print and Styled HTML.
+- **Toolbar extras:** maths, emoji picker and clear formatting.
+- **Markdown cheat sheet** in the sidebar opens a live example document.
+- **Full screen** button in the top bar.
 
 ## Navigating open files
 
