@@ -21,16 +21,24 @@ between them and remembers the choice; without a choice the OS setting wins.
 The logos in `brand/` are the supplied artwork, resized uniformly: the charcoal
 wordmark on light, the lime and cream wordmark on dark.
 
-## Cloudflare Pages / Wrangler
+## Deploying (Cloudflare Workers)
 
-```
-wrangler pages deploy .
-```
+The site is the `public/` folder. `wrangler.jsonc` at the repo root deploys it
+as a static-assets Worker named `markdown-viewer` and attaches the custom
+domain `markdown.digitum.marketing`.
 
-Deploy from inside this folder so `index.html`, `manifest.json`, `sw.js` and
-`icons/` all land at the domain root. Paths in `manifest.json` are root
-relative (`/icons/...`, `/sw.js`), so this only works cleanly if the site is
-served from a domain or subdomain root, not a subpath.
+- **Automatic:** the Worker is connected to this repo with Workers Builds, so
+  every push to `main` runs `npx wrangler deploy`. Leave the build command
+  empty and the deploy command as `npx wrangler deploy`.
+- **By hand:** `npx wrangler deploy` from the repo root.
+
+The custom domain is created by the deploy. Cloudflare refuses it if a DNS
+record for `markdown` already exists, so delete any manual CNAME or A record
+for that name first and let the deploy create its own.
+
+Paths in `manifest.json` and `sw.js` are root relative (`/icons/...`,
+`/sw.js`), so the app must be served from a domain or subdomain root, not a
+subpath.
 
 ## What "Install app" and file handling need
 
