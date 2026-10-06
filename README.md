@@ -96,9 +96,19 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v6`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v7`) to force old caches out.
 
 ## Editing and saving
+
+### New files
+
+"New file" in the sidebar, "Create a new file" on the start screen, or the `N`
+key opens a blank `Untitled.md` straight into the editor with its title
+selected. Until it is saved it lives in the browser and in Recent, so a reload
+does not lose it. `Ctrl S` or "Save file" opens the save dialog, suggesting a
+name taken from the first heading; after that the document is backed by the
+real file and autosaves like any other. Browsers without a save dialog
+(Safari, Firefox) download it instead.
 
 The pencil button in the top bar turns the reading view into a two pane
 editor: markdown source on the left, live preview on the right. Below 1000px

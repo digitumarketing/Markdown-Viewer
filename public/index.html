@@ -123,6 +123,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .brand{display:inline-block;line-height:0}
 .brand img{height:34px;width:auto}
 .rail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.rail-actions .btn{flex:1 1 auto}
+.btn.new{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;flex-basis:100%}
+.start-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.start-row .btn{display:flex;align-items:center;gap:7px;padding:11px 18px;font-size:15px}
+.start-row span{color:var(--muted);font-size:14px}
 .btn.install{
   display:flex;align-items:center;gap:6px;width:100%;justify-content:center;
   background:var(--brand-charcoal);color:var(--brand-cream);border-color:transparent;font-weight:600;
@@ -583,7 +588,8 @@ body.dragging #dropveil{display:grid}
         <img class="logo-dark" src="brand/logo-lime-cream.png" alt="Digitum" width="640" height="205">
       </a>
       <div class="rail-actions">
-        <button class="btn primary" id="openFiles">Open files</button>
+        <button class="btn primary new" id="newFile" title="Start a new markdown file (N)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v10M3 8h10"/></svg>New file</button>
+        <button class="btn" id="openFiles">Open files</button>
         <button class="btn" id="openFolder">Open folder</button>
         <button class="btn install" id="installBtn" hidden>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12v1.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
@@ -657,7 +663,12 @@ body.dragging #dropveil{display:grid}
       <div class="empty" id="empty">
         <div class="eyebrow">Markdown Viewer</div>
         <h1>Read any markdown file the way it was <em>meant to look</em></h1>
-        <p class="lede">Drop a .md file and get clean typography, an outline, search and a print ready layout. Edit with a formatting toolbar, see every selection mirrored between source and preview, and save straight back to the file. Nothing leaves your browser.</p>
+        <p class="lede">Start a new file or drop in a .md file and get clean typography, an outline, search and a print ready layout. Edit with a formatting toolbar, see every selection mirrored between source and preview, and save straight back to the file. Nothing leaves your browser.</p>
+
+        <div class="start-row">
+          <button class="btn primary" id="newFileHero"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v10M3 8h10"/></svg>Create a new file</button>
+          <span>or open one you already have</span>
+        </div>
 
         <div class="resume" id="resume" hidden>
           <div class="r-body">
@@ -686,7 +697,7 @@ body.dragging #dropveil{display:grid}
         </div>
         <textarea id="paste" placeholder="Or paste markdown text here to preview it"></textarea>
         <div class="keys">
-          <kbd>Ctrl</kbd> <kbd>O</kbd> open files &nbsp;&nbsp; <kbd>/</kbd> search &nbsp;&nbsp; <kbd>[</kbd> <kbd>]</kbd> previous or next file &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>E</kbd> edit &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>B</kbd> <kbd>I</kbd> <kbd>K</kbd> bold, italic, link &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>1</kbd>–<kbd>6</kbd> heading &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>S</kbd> save &nbsp;&nbsp; <kbd>Esc</kbd> back &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>P</kbd> save as PDF
+          <kbd>N</kbd> new file &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>O</kbd> open files &nbsp;&nbsp; <kbd>/</kbd> search &nbsp;&nbsp; <kbd>[</kbd> <kbd>]</kbd> previous or next file &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>E</kbd> edit &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>B</kbd> <kbd>I</kbd> <kbd>K</kbd> bold, italic, link &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>1</kbd>–<kbd>6</kbd> heading &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>S</kbd> save &nbsp;&nbsp; <kbd>Esc</kbd> back &nbsp;&nbsp; <kbd>Ctrl</kbd> <kbd>P</kbd> save as PDF
         </div>
       </div>
       <div class="editor-pane" id="editorPane" hidden>
@@ -1306,7 +1317,7 @@ function remember(f){
     id: f.id,
     name: f.name,
     dir: f.dir || "",
-    kind: f.source === "url" ? "url" : (f.handle ? "handle" : (f.source === "text" ? "text" : "snapshot")),
+    kind: f.source === "url" ? "url" : (f.handle ? "handle" : (f.source === "text" || f.source === "new" ? f.source : "snapshot")),
     url: f.url || null,
     handle: f.handle || null,
     size: f.size || 0,
@@ -1367,6 +1378,7 @@ function kindLabel(rec){
   if(rec.kind === "url") return "Link";
   if(rec.kind === "handle") return "File on disk";
   if(rec.kind === "text") return "Pasted text";
+  if(rec.kind === "new") return "New file, not saved yet";
   return "Saved copy";
 }
 
@@ -1463,7 +1475,7 @@ async function reopen(rec){
 
   if(rec.text){
     var g = { id:rec.id, name:rec.name, dir:rec.dir||"", text:rec.text, size:rec.size,
-              handle:rec.handle || null, source: rec.kind === "text" ? "text" : "upload", scroll:rec.scroll || 0 };
+              handle:rec.handle || null, source: rec.kind === "text" || rec.kind === "new" ? rec.kind : "upload", scroll:rec.scroll || 0 };
     var idx = indexOfIdStrict(g.id);
     if(idx > -1){ state.files[idx] = g; state.active = idx; }
     else { state.files.push(g); state.active = state.files.length - 1; }
@@ -1601,6 +1613,27 @@ function toast(msg){
   t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2400);
 }
 
+/* A brand new document. It lives in this browser (and in Recent) until it
+   is saved, at which point the save dialog gives it a real file and
+   autosave takes over. */
+function newFile(){
+  var used = {}, n = 1, name;
+  state.files.forEach(function(f){ used[f.name] = true; });
+  do{ name = "Untitled" + (n > 1 ? " " + n : "") + ".md"; n++; }while(used[name]);
+  var text = "# Untitled\n\n";
+  var rec = { id:"n:" + Date.now(), name:name, dir:"", text:text, size:text.length,
+              handle:null, source:"new", dirty:false, scroll:0 };
+  state.files.push(rec);
+  state.active = state.files.length - 1;
+  document.body.classList.remove("rail-open");
+  paintFileList();
+  render(false);
+  enterEdit();
+  editor.setSelectionRange(2, 10);   /* typing replaces the placeholder title */
+}
+
+$("newFile").addEventListener("click", newFile);
+$("newFileHero").addEventListener("click", newFile);
 $("openFiles").addEventListener("click", pickFiles);
 $("openFolder").addEventListener("click", pickFolder);
 $("dropzone").addEventListener("click", pickFiles);
@@ -1748,6 +1781,7 @@ document.addEventListener("keydown", function(e){
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o"){ e.preventDefault(); pickFiles(); return; }
   if(typing){ if(e.key === "Escape") e.target.blur(); return; }
   if(e.key === "/"){ e.preventDefault(); searchBox.focus(); }
+  else if(e.key === "n" && !mod && !e.altKey){ e.preventDefault(); newFile(); }
   else if(e.key === "["){ step(-1); }
   else if(e.key === "]"){ step(1); }
   else if(e.key === "Escape" && state.active > -1){ goHome(); }
@@ -1786,8 +1820,10 @@ function setStatus(kind, text){
 function refreshStatus(){
   var f = state.files[state.active];
   if(!f || !state.editing) return setStatus("", "");
+  $("saveCopyBtn").textContent = (f.source === "new" && !f.handle) ? "Save file" : "Save a copy";
   if(f.dirty) return setStatus("dirty", canWrite(f) ? "Saving…" : "Unsaved");
   if(canWrite(f)) return setStatus("saved", "Saved");
+  if(f.source === "new") return setStatus("readonly", "Not saved yet");
   setStatus("readonly", "Copy only");
 }
 
@@ -1807,7 +1843,9 @@ function enterEdit(){
   $("tabPreview").classList.remove("on");
   refreshStatus();
   Sync.reset();
-  if(!canWrite(f)){
+  if(f.source === "new" && !f.handle){
+    toast("New file. Ctrl S saves it to your computer");
+  }else if(!canWrite(f)){
     toast(f.source === "url"
       ? "Loaded from a link, so edits can only be saved as a copy"
       : "This file was opened without write access, so edits save as a copy");
@@ -1920,6 +1958,12 @@ async function saveCopy(){
   var f = state.files[state.active];
   if(!f) return;
   var name = f.name.replace(MD_EXT, "") + ".md";
+  if(f.source === "new" && /^Untitled( \d+)?\.md$/.test(f.name)){
+    /* name an unsaved new file after its first heading */
+    var h = f.text.match(/^#{1,6}[ \t]+(.+)$/m);
+    var base = h ? h[1].replace(/[\\/:*?"<>|#]+/g, "").trim().slice(0, 60) : "";
+    if(base && base !== "Untitled") name = base + ".md";
+  }
 
   if(window.showSaveFilePicker){
     try{
@@ -1955,6 +1999,14 @@ async function saveCopy(){
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
   f.dirty = false;
+  if(f.source === "new"){
+    /* it exists on disk now, but without a handle further saves are copies */
+    f.source = "upload";
+    f.name = name;
+    crumb.textContent = name;
+    paintFileList();
+    remember(f);
+  }
   refreshStatus();
   toast("Downloaded " + name);
 }
