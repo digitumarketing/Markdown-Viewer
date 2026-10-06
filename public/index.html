@@ -402,6 +402,11 @@ body.editing article{
 .tb-menu button:hover,.tb-menu button:focus{background:var(--panel);outline:none}
 .tb-menu button.cur{box-shadow:inset 3px 0 0 var(--lime)}
 .tb-menu kbd{font-size:10px;color:var(--muted)}
+.tb-menu.export button{align-items:center;justify-content:flex-start;gap:11px;padding:8px 10px}
+.tb-menu.export svg{flex:0 0 18px;color:var(--muted)}
+.tb-menu.export .x-name{font-weight:500;font-size:14.5px}
+.tb-menu.export .x-sub{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.tb-menu .x-head{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 10px 4px}
 .tb-menu .m0{font-size:14px}
 .tb-menu .m1{font-size:22px;font-weight:700}
 .tb-menu .m2{font-size:19px;font-weight:600}
@@ -560,7 +565,14 @@ body.dragging #dropveil{display:grid}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{
-  .rail,.topbar,#progress,.copy,.toast,.url-row{display:none!important}
+  :root{
+    --paper:#fff !important;--surface:#F6F3ED !important;--panel:#F1ECE3 !important;
+    --ink:#272320 !important;--muted:#6B645C !important;--rule:#D6CFC2 !important;
+    --link:#272320 !important;--link-line:#272320 !important;
+  }
+  .rail,.topbar,#progress,.copy,.toast,.url-row,.editor-pane,.tb-menu,.pane-tabs{display:none!important}
+  body.editing #stage{display:block;height:auto;overflow:visible}
+  body.editing article{display:block!important;overflow:visible;padding:0}
   body{background:#fff;color:#000}
   article{max-width:none;padding:0;font-size:11.5pt;color:#000}
   article a{color:#000}
@@ -653,6 +665,9 @@ body.dragging #dropveil{display:grid}
       <button class="icon-btn" id="themeBtn" title="Switch light or dark" aria-label="Switch light or dark theme">
         <svg class="sun" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3"/></svg>
         <svg class="moon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1z"/></svg>
+      </button>
+      <button class="icon-btn" id="exportBtn" title="Export" aria-label="Export" aria-haspopup="true" aria-expanded="false" hidden>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12v1.5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
       </button>
       <button class="icon-btn" id="printBtn" title="Print or save as PDF" aria-label="Print">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 6V2h7v4M4.5 12H3V7h10v5h-1.5M4.5 10h7v4h-7z"/></svg>
@@ -764,6 +779,14 @@ body.dragging #dropveil{display:grid}
 <input type="file" id="filePicker" accept=".md,.markdown,.mdx,.txt,.mkd,text/markdown" multiple hidden>
 <input type="file" id="folderPicker" webkitdirectory directory multiple hidden>
 <div class="toast" id="toast"></div>
+<div class="tb-menu export" id="exportMenu" role="menu" aria-label="Export" hidden>
+  <div class="x-head">Export as</div>
+  <button role="menuitem" data-export="md"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M5.8 9h5.4M5.8 11.4h5.4M5.8 13.8h3.4"/></svg><span><span class="x-name">Markdown</span><span class="x-sub">.md source file</span></span></button>
+  <button role="menuitem" data-export="html"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M7.3 9.4l-1.6 1.7 1.6 1.7M9.7 9.4l1.6 1.7-1.6 1.7"/></svg><span><span class="x-name">HTML</span><span class="x-sub">Plain, no styling</span></span></button>
+  <button role="menuitem" data-export="styled"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M7.3 9.4l-1.6 1.7 1.6 1.7M9.7 9.4l1.6 1.7-1.6 1.7"/><circle cx="12.6" cy="13.6" r="1.2" fill="currentColor" stroke="none"/></svg><span><span class="x-name">Styled HTML</span><span class="x-sub">Digitum look, one self-contained file</span></span></button>
+  <button role="menuitem" data-export="pdf"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M6 9.3h5M8.5 9.3v5"/></svg><span><span class="x-name">PDF</span><span class="x-sub">Choose Save as PDF in the dialog</span></span></button>
+  <button role="menuitem" data-export="png"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><circle cx="6.9" cy="9.6" r="1"/><path d="M4.5 14.5l3-2.6 1.8 1.5 1.6-1.3 2.1 1.8"/></svg><span><span class="x-name">PNG</span><span class="x-sub">Image of the whole document</span></span></button>
+</div>
 
 <div class="sheet-veil" id="installHelp" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
@@ -1005,6 +1028,7 @@ function render(restoreScroll){
   $("div1").hidden = false;
   $("closeBtn").hidden = false;
   $("editBtn").hidden = false;
+  $("exportBtn").hidden = false;
   if(state.editing){
     editor.value = f.text;
     refreshStatus();
@@ -1586,6 +1610,7 @@ function goHome(msg){
   $("div1").hidden = true;
   $("closeBtn").hidden = true;
   $("editBtn").hidden = true;
+  $("exportBtn").hidden = true;
   crumb.textContent = "";
   meta.textContent = "";
   document.title = BASE_TITLE;
@@ -1758,6 +1783,7 @@ document.addEventListener("keydown", function(e){
 
   if(Fmt.shortcut(e)) return;
   if(e.key === "Escape" && Fmt.closeMenu()) return;
+  if(e.key === "Escape" && Export.close()){ $("exportBtn").focus(); return; }
 
   if(mod && e.key.toLowerCase() === "s"){
     e.preventDefault();
@@ -2719,6 +2745,276 @@ $("tabPreview").addEventListener("click", function(){
   Fmt.closeMenu();
   Sync.refresh();
 });
+
+/* ================= export ================= */
+/* Markdown, plain HTML, styled HTML, PDF (through the print dialog, so the
+   text stays selectable and links stay clickable) and PNG. Everything is
+   produced in the browser; nothing is uploaded. */
+
+var Export = (function(){
+  var menu = $("exportMenu"), btn = $("exportBtn");
+  var scripts = {};
+
+  /* the same look as the reader, light theme, for the styled HTML file */
+  var STYLED_CSS = [
+    ":root{--paper:#EFEAE1;--surface:#F6F3ED;--panel:#E6E0D5;--ink:#272320;--muted:#6B645C;--rule:#D6CFC2;--lime:#C8FF00}",
+    "*{box-sizing:border-box}",
+    "html{background:var(--paper)}",
+    "body{margin:0;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}",
+    "article{max-width:760px;margin:0 auto;padding:56px 26px 64px;font-family:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:17px;line-height:1.65}",
+    "article h1,article h2,article h3,article h4,article h5,article h6{font-weight:600;letter-spacing:-.01em;line-height:1.22}",
+    "article h1{font-size:2.15em;font-weight:700;margin:0 0 .5em}",
+    "article h2{font-size:1.5em;margin:2em 0 .55em;padding-bottom:.3em;border-bottom:1px solid var(--rule)}",
+    "article h3{font-size:1.2em;margin:1.7em 0 .45em}",
+    "article h4{font-size:1.02em;margin:1.5em 0 .4em}",
+    "article h5,article h6{font-size:.94em;color:var(--muted);margin:1.4em 0 .4em}",
+    "article p{margin:0 0 1.1em}",
+    "article a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}",
+    "article a:hover{background:var(--lime)}",
+    "article strong{font-weight:600}",
+    "article ul,article ol{margin:0 0 1.1em;padding-left:1.5em}",
+    "article li{margin:.3em 0}",
+    "article li::marker{color:var(--muted)}",
+    "article li.task{list-style:none;margin-left:-1.2em}",
+    "article li.task input{margin-right:.55em;accent-color:var(--lime)}",
+    "article blockquote{margin:1.6em 0;padding:.85em 1.1em .85em 1.25em;border-left:4px solid var(--lime);border-radius:0 8px 8px 0;background:var(--panel)}",
+    "article blockquote p:last-child{margin-bottom:0}",
+    "article hr{border:0;border-top:1px solid var(--rule);margin:2.4em 0}",
+    "article img{max-width:100%;height:auto;border-radius:8px;margin:.6em 0}",
+    "article table{width:100%;border-collapse:collapse;margin:1.5em 0;font-size:14.5px}",
+    "article th,article td{border:1px solid var(--rule);padding:8px 11px;text-align:left;vertical-align:top}",
+    "article th{background:var(--panel);font-weight:600}",
+    "article code{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;font-size:.84em;background:var(--panel);padding:.16em .38em;border-radius:4px;border:1px solid var(--rule)}",
+    "article pre{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:1.5em 0}",
+    "article pre code{background:none;border:0;padding:0;font-size:13.5px;line-height:1.65}",
+    "article .mermaid{margin:1.5em 0;text-align:center}",
+    ".hljs-comment,.hljs-quote{color:#7F786F;font-style:italic}",
+    ".hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-type{color:#8A2F6E}",
+    ".hljs-string,.hljs-attr,.hljs-regexp,.hljs-addition{color:#3D6B12}",
+    ".hljs-number,.hljs-symbol,.hljs-bullet{color:#A4520E}",
+    ".hljs-title,.hljs-name,.hljs-section,.hljs-built_in{color:#1F5A96}",
+    ".hljs-variable,.hljs-template-variable,.hljs-attribute{color:#7D5800}",
+    ".hljs-meta,.hljs-deletion{color:#A03030}",
+    "@media (max-width:640px){article{padding:32px 18px 40px;font-size:16.5px}}",
+    "@media print{html,body{background:#fff}article{max-width:none;padding:0;font-size:11.5pt}article pre,article table,article blockquote{break-inside:avoid}}"
+  ].join("\n");
+
+  var FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+    '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">\n';
+
+  function current(){ return state.files[state.active] || null; }
+  function base(f){ return (f.name.replace(MD_EXT, "") || "document").replace(/[\\/:*?"<>|]+/g, "-"); }
+  function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function titleOf(f){
+    var h = doc.querySelector("h1");
+    return h ? h.textContent.trim() : base(f);
+  }
+
+  function download(blob, name){
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    toast("Exported " + name);
+  }
+
+  function loadScript(url){
+    if(!scripts[url]){
+      scripts[url] = new Promise(function(res, rej){
+        var s = document.createElement("script");
+        s.src = url;
+        s.onload = res;
+        s.onerror = function(){ delete scripts[url]; rej(new Error("Could not load " + url)); };
+        document.head.appendChild(s);
+      });
+    }
+    return scripts[url];
+  }
+
+  /* The preview as it looks now (highlighted code, diagrams), minus
+     everything that only exists for the app: copy buttons, sync markers,
+     search highlights. */
+  function cleanPreview(){
+    var c = doc.cloneNode(true);
+    c.removeAttribute("id");
+    c.removeAttribute("hidden");
+    c.removeAttribute("style");
+    Array.prototype.forEach.call(c.querySelectorAll(".copy"), function(el){ el.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll("[data-b]"), function(el){
+      el.removeAttribute("data-b");
+      el.classList.remove("sync-block", "sync-flash");
+      if(!el.getAttribute("class")) el.removeAttribute("class");
+    });
+    if(state.query.trim()){
+      Array.prototype.forEach.call(c.querySelectorAll("mark"), function(m){
+        m.replaceWith(document.createTextNode(m.textContent));
+      });
+      c.normalize();
+    }
+    Array.prototype.forEach.call(c.querySelectorAll("li.task input"), function(i){
+      if(i.checked) i.setAttribute("checked", ""); else i.removeAttribute("checked");
+    });
+    return c;
+  }
+
+  /* images opened alongside the file only exist as blob: URLs in this tab */
+  function inlineImages(root){
+    var imgs = Array.prototype.filter.call(root.querySelectorAll("img"), function(i){
+      return /^blob:/.test(i.getAttribute("src") || "");
+    });
+    return Promise.all(imgs.map(function(img){
+      return fetch(img.getAttribute("src")).then(function(r){ return r.blob(); }).then(function(b){
+        return new Promise(function(res){
+          var fr = new FileReader();
+          fr.onload = function(){ img.setAttribute("src", fr.result); res(); };
+          fr.onerror = function(){ res(); };
+          fr.readAsDataURL(b);
+        });
+      }).catch(function(){});
+    }));
+  }
+
+  function page(title, head, body){
+    return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>' + esc(title) + '</title>\n' + head + '</head>\n<body>\n' + body + '\n</body>\n</html>\n';
+  }
+
+  function asMarkdown(f){
+    download(new Blob([f.text], { type:"text/markdown;charset=utf-8" }), base(f) + ".md");
+  }
+
+  function asHTML(f){
+    var body = '<article>\n' + toHTML(f.text) + '\n</article>';
+    download(new Blob([page(titleOf(f), "", body)], { type:"text/html;charset=utf-8" }), base(f) + ".html");
+  }
+
+  function asStyledHTML(f){
+    var c = cleanPreview();
+    /* a shared file should not look like a form someone can fill in */
+    Array.prototype.forEach.call(c.querySelectorAll("li.task input"), function(i){ i.setAttribute("disabled", ""); });
+    return inlineImages(c).then(function(){
+      var head = FONTS + '<style>\n' + STYLED_CSS + '\n</style>\n';
+      var body = '<article>\n' + c.innerHTML + '\n</article>';
+      download(new Blob([page(titleOf(f), head, body)], { type:"text/html;charset=utf-8" }), base(f) + ".html");
+    });
+  }
+
+  function asPDF(f){
+    /* the browser names the PDF after the page title */
+    var keep = document.title;
+    document.title = base(f);
+    var restore = function(){ document.title = keep; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    toast("Choose Save as PDF as the destination");
+    setTimeout(function(){ window.print(); setTimeout(restore, 1000); }, 350);
+  }
+
+  /* Renders a copy of the document at a fixed reading width and turns it
+     into an image with html-to-image, which lets the browser paint it, so
+     it matches the preview exactly (current theme included). */
+  function asPNG(f){
+    toast("Rendering image");
+    return loadScript("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js").then(function(){
+      var stage = document.createElement("div");
+      stage.setAttribute("aria-hidden", "true");
+      stage.style.cssText = "position:fixed;left:-20000px;top:0;width:860px;pointer-events:none";
+      var art = document.createElement("article");
+      art.innerHTML = cleanPreview().innerHTML;
+      art.style.cssText = "max-width:none;width:860px;margin:0;padding:56px 56px 64px;background:var(--paper);color:var(--ink)";
+      stage.appendChild(art);
+      document.body.appendChild(stage);
+
+      var imgs = Array.prototype.map.call(art.querySelectorAll("img"), function(img){
+        return img.complete ? null : new Promise(function(r){ img.onload = img.onerror = r; });
+      }).filter(Boolean);
+      var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+
+      return Promise.all(imgs.concat([fontsReady])).then(function(){
+        /* keep the canvas inside what every browser can allocate */
+        var h = art.offsetHeight;
+        var ratio = Math.max(0.5, Math.min(2, 16000 / Math.max(h, 1)));
+        var opts = { pixelRatio: ratio, backgroundColor: getComputedStyle(document.body).backgroundColor, cacheBust: false };
+        return window.htmlToImage.toBlob(art, opts).catch(function(){
+          /* web fonts are the usual failure; try again with the fonts already on the page */
+          opts.skipFonts = true;
+          return window.htmlToImage.toBlob(art, opts);
+        });
+      }).then(function(blob){
+        stage.remove();
+        if(!blob) throw new Error("empty image");
+        download(blob, base(f) + ".png");
+      }, function(err){
+        stage.remove();
+        throw err;
+      });
+    });
+  }
+
+  function run(kind){
+    close();
+    var f = current();
+    if(!f) return;
+    /* export what is on screen, including edits the preview has not caught up with */
+    if(state.editing && editor.value !== state.renderedText){
+      f.text = editor.value;
+      paintDoc(f.text);
+      Sync.afterRender();
+    }
+    var job;
+    try{
+      job = kind === "md" ? asMarkdown(f)
+          : kind === "html" ? asHTML(f)
+          : kind === "styled" ? asStyledHTML(f)
+          : kind === "pdf" ? asPDF(f)
+          : kind === "png" ? asPNG(f) : null;
+    }catch(err){ job = Promise.reject(err); }
+    Promise.resolve(job).catch(function(err){
+      toast("Export failed. " + (err && err.message ? err.message : ""));
+    });
+  }
+
+  function open(){
+    menu.hidden = false;
+    var r = btn.getBoundingClientRect();
+    menu.style.top = (r.bottom + 6) + "px";
+    menu.style.left = Math.max(8, Math.min(r.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8)) + "px";
+    btn.setAttribute("aria-expanded", "true");
+    btn.classList.add("on");
+    var first = menu.querySelector("button");
+    if(first) first.focus({ preventScroll:true });
+  }
+  function close(){
+    if(menu.hidden) return false;
+    menu.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    btn.classList.remove("on");
+    return true;
+  }
+
+  btn.addEventListener("click", function(){ if(!close()) open(); });
+  menu.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-export]");
+    if(b) run(b.getAttribute("data-export"));
+  });
+  menu.addEventListener("keydown", function(e){
+    if(e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    var list = Array.prototype.slice.call(menu.querySelectorAll("button"));
+    var i = list.indexOf(document.activeElement);
+    list[(i + (e.key === "ArrowDown" ? 1 : -1) + list.length) % list.length].focus();
+  });
+  document.addEventListener("mousedown", function(e){
+    if(!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close();
+  });
+  window.addEventListener("resize", close);
+
+  return { run:run, close:close };
+})();
 
 /* ================= theme ================= */
 

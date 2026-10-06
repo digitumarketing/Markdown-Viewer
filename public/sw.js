@@ -2,7 +2,7 @@
 // Only exists to make the app installable and usable offline once visited.
 // It never touches files the user opens; those stay entirely in the page's memory.
 
-var CACHE = "digitum-md-viewer-v7";
+var CACHE = "digitum-md-viewer-v8";
 var CORE_ASSETS = [
   "/",
   "/index.html",

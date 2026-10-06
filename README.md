@@ -96,7 +96,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v7`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v8`) to force old caches out.
 
 ## Editing and saving
 
@@ -173,6 +173,23 @@ Two safeguards are worth knowing about. If the file changed on disk after you
 opened it, saving asks whether to overwrite it or reload the newer version,
 rather than silently clobbering someone else's work. And closing a document
 or the browser tab with unsaved copy-only edits prompts first.
+
+## Export
+
+The download button in the top bar (shown once a document is open) exports
+the current document, including unsaved edits:
+
+| Option | What you get |
+| --- | --- |
+| Markdown | The `.md` source |
+| HTML | The rendered document as plain HTML, no styling |
+| Styled HTML | One self-contained `.html` file in the Digitum look: highlighted code, diagrams, and any local images embedded |
+| PDF | Opens the print dialog with the print layout; choose Save as PDF. Text stays selectable and links clickable, and the file is named after the document |
+| PNG | An image of the whole document at reading width, in the current theme |
+
+PNG uses `html-to-image` (loaded from jsDelivr on first use), so the browser
+paints it exactly like the preview. Very long documents are rendered at a
+lower pixel ratio to stay inside browser canvas limits.
 
 ## Navigating open files
 
