@@ -32,6 +32,9 @@ domain `markdown.digitum.marketing`.
   empty and the deploy command as `npx wrangler deploy`.
 - **By hand:** `npx wrangler deploy` from the repo root.
 
+Live at https://markdown.digitum.marketing. A push to `main` is usually live
+within a minute or two; the Worker's Deployments tab shows each build.
+
 The custom domain is created by the deploy. Cloudflare refuses it if a DNS
 record for `markdown` already exists, so delete any manual CNAME or A record
 for that name first and let the deploy create its own.
