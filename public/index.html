@@ -15,8 +15,8 @@ try{ var t = localStorage.getItem("digitum-md-theme"); if(t === "light" || t ===
 <meta property="og:description" content="Open any .md file in a clean, readable layout. Outline, search, code highlighting and one click PDF export.">
 <meta property="og:type" content="website">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAC8UlEQVR42u2Wy0tVURTG11r7HM893nv1WJoVpaZUCIElBhURlzSa9BJ6QFpBsxxFBA2CBjVo0kTqL+gBEQ1qECHYC4peFytKrkkpJJGP9F493nPPa+/VwEkFPTzVIHCNF99v8+39fWxcWVcD/3II/vHMAf5bgBAMAPtPThw6Pf6LzfJ5ViQEIsJQX9HoB625zc48Nv++RUTsu0gEK5q8n6xp0dSRQErctNuuW+Nlh8UfARABCQCAFTADCUBgoUPr8RwATI4Kq1JGByABK+CvFJQEAJQSSuZL30WlwHcxIoAEKAkkoHGLszrlVNaEQuepz6I/baS74nFLbdzs5Ccp8H4GwB+V3Yx6XYPXfmqituH7a5zOUborrum8Yee0m6cjjVWzfkVKwsq17onLw7UNHjP4LmZHRHZEzBgSK+bUPjthqftXk0UxjmJRwlIdnWOGyf3pWOZJ7MVdc/yjxgwVS8OmrU5qr40Eqzc7r+6Zd64kowRtz/Fs+RL54FrSy9ON89bYkO4VyC9QdkTrfWS+um/WrPJLF6hFtUG6q/hdT2zWFplJ9fKumdprT+eoYJOmMyIgghAsBHsOvX9pvH1mAMC6bfkoXTQ8qDe328Wl6vntOCIohczADIpRStQMbjloD742Rj9oi+qCKIANu6aRIHAx8BEAmL+JXuAhMDS2OL2PTE2P1KYJSwUeFplcVe8zg9AYCZBAaMwMldUBIs9fHMoQ7QmKAvjYr+sGBx5u78gly2ToIytgBaGPZkLtPpZjRmZgBYiR6rpg0/odec+hsgWyIeXmJynwKGHJVRvdw2fHq+oDEjzUZ9gTYnmTd/OCNesc9HQXd18qaTkwVbBp4bKgo3PMmSJEMJMqDBAQnEnq6Tab22y/EKmLkODymXm+i1sOTgmN/QLqBjNDGKCm86cB/fnt+Lpt+dIK6eYpikUzp3rz0Mw8NUmAmWAS4Bfw04DefbHk+rmy1qO5yurQcyjzOPb0VnzWZTf3bZkD/PZ8Ae4CUIQ8s9sMAAAAAElFTkSuQmCC">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
 <link rel="manifest" href="/manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
@@ -526,6 +526,12 @@ body.embed article{padding:28px 24px 56px}
 .embed-badge img{width:11px;height:auto}
 body.embed .embed-badge{display:flex}
 
+.editor-status{
+  display:flex;gap:14px;flex-wrap:wrap;padding:5px 14px;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--surface);
+}
+.editor-status b{font-weight:600;color:var(--ink)}
+
 /* the matching text in the preview */
 ::highlight(md-sync){background-color:var(--sync);color:var(--lime-ink)}
 article ::selection{background:var(--ink);color:var(--paper)}
@@ -578,6 +584,8 @@ body.editing.v-editor .editor-wrap .editor{padding-left:max(14px,calc((100% - 82
 .empty{max-width:600px;margin:0 auto;padding:76px 26px 40px}
 .empty .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:14px}
 .empty h1{font-family:var(--ui);font-size:32px;font-weight:700;letter-spacing:-.015em;margin:0 0 10px;line-height:1.18}
+:root[data-theme="dark"] .empty h1 em{background:none !important}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .empty h1 em{background:none !important} }
 .empty h1 em{font-style:normal;background:linear-gradient(100deg,transparent 0 2px,var(--lime) 2px 97%,transparent 97%);background-size:100% 42%;background-repeat:no-repeat;background-position:0 88%}
 .empty p.lede{color:var(--muted);margin:0 0 26px;font-size:16px;line-height:1.6}
 
@@ -693,8 +701,8 @@ body.dragging #dropveil{display:grid}
   <aside class="rail" id="rail">
     <div class="rail-head">
       <a class="brand" href="https://markdown.digitum.marketing" target="_blank" rel="noopener" title="digitum.marketing">
-        <img class="logo-light" src="brand/logo-charcoal.png" alt="Digitum" width="640" height="207">
-        <img class="logo-dark" src="brand/logo-lime-cream.png" alt="Digitum" width="640" height="205">
+        <img class="logo-light" src="/brand/logo-charcoal.png" alt="Digitum" width="640" height="207">
+        <img class="logo-dark" src="/brand/logo-lime-cream.png" alt="Digitum" width="640" height="205">
       </a>
       <div class="rail-actions">
         <button class="btn primary new" id="newFile" title="Start a new markdown file (N)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v10M3 8h10"/></svg>New file</button>
@@ -735,8 +743,8 @@ body.dragging #dropveil{display:grid}
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
       </button>
       <button class="app-name" id="homeBtn" title="Back to start" aria-label="Back to start">
-        <img class="logo-light" src="brand/mark-charcoal.png" alt="" width="17" height="23">
-        <img class="logo-dark" src="brand/mark-lime.png" alt="" width="17" height="23">
+        <img class="logo-light" src="/brand/mark-charcoal.png" alt="" width="17" height="23">
+        <img class="logo-dark" src="/brand/mark-lime.png" alt="" width="17" height="23">
         <span>Digitum Markdown Viewer</span>
       </button>
       <span class="divider" id="div1" hidden></span>
@@ -778,7 +786,7 @@ body.dragging #dropveil{display:grid}
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 6V2h7v4M4.5 12H3V7h10v5h-1.5M4.5 10h7v4h-7z"/></svg>
       </button>
       <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </div>
 
@@ -880,12 +888,13 @@ body.dragging #dropveil{display:grid}
                     autocapitalize="off" autocorrect="off" wrap="soft"
                     aria-label="Markdown source"></textarea>
         </div>
+        <div class="editor-status" id="editorStatus" aria-live="off"></div>
       </div>
       <article id="doc" hidden></article>
       <footer class="page-foot">
         <a class="brand" href="https://markdown.digitum.marketing" target="_blank" rel="noopener" style="border:0;padding:0">
-          <img class="logo-light" src="brand/logo-charcoal.png" alt="Digitum" width="640" height="207">
-          <img class="logo-dark" src="brand/logo-lime-cream.png" alt="Digitum" width="640" height="205">
+          <img class="logo-light" src="/brand/logo-charcoal.png" alt="Digitum" width="640" height="207">
+          <img class="logo-dark" src="/brand/logo-lime-cream.png" alt="Digitum" width="640" height="205">
         </a>
         <span class="sep"></span>
         <span>A free tool by <a href="https://digitum.marketing" target="_blank" rel="noopener">digitum.marketing</a></span>
@@ -898,7 +907,7 @@ body.dragging #dropveil{display:grid}
 <input type="file" id="filePicker" accept=".md,.markdown,.mdx,.txt,.mkd,text/markdown" multiple hidden>
 <input type="file" id="folderPicker" webkitdirectory directory multiple hidden>
 <div class="toast" id="toast"></div>
-<a class="embed-badge" id="embedBadge" href="/" target="_blank" rel="noopener"><img src="brand/mark-lime.png" alt="">Open in Digitum Markdown Viewer</a>
+<a class="embed-badge" id="embedBadge" href="/" target="_blank" rel="noopener"><img src="/brand/mark-lime.png" alt="">Open in Digitum Markdown Viewer</a>
 <div class="tb-menu export" id="exportMenu" role="menu" aria-label="Export" hidden>
   <div class="x-head">Export as</div>
   <button role="menuitem" data-export="md"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.8h6.5L14 5.3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12.5a1 1 0 0 1 1-1z"/><path d="M10.3 1.8v3.7H14"/><path d="M5.8 9h5.4M5.8 11.4h5.4M5.8 13.8h3.4"/></svg><span><span class="x-name">Markdown</span><span class="x-sub">.md source file</span></span></button>
@@ -918,7 +927,7 @@ body.dragging #dropveil{display:grid}
 <div class="sheet-veil" id="shareSheet" hidden>
   <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
     <h2 id="shareTitle">Share this document</h2>
-    <p class="sub">The whole document is packed into the link itself. Nothing is uploaded, and everyone who opens it gets their own copy to read or edit.</p>
+    <p class="sub">Creates a short link to a copy of this document. Everyone who opens it can read it and open their own copy to edit.</p>
     <label class="field-label" for="shareLink">Link</label>
     <div class="copy-row"><input id="shareLink" readonly><button class="btn primary" data-copy="shareLink">Copy link</button></div>
     <label class="field-label" for="embedCode">Embed on a website</label>
@@ -977,7 +986,7 @@ var MD_EXT = /\.(md|markdown|mdx|mkd|txt)$/i;
 var IMG_EXT = /\.(png|jpe?g|gif|svg|webp|avif|bmp)$/i;
 var BASE_TITLE = "Digitum Markdown Viewer";
 var CACHE_LIMIT = 2 * 1024 * 1024;   /* biggest doc kept as a snapshot */
-var MAX_RECENTS = 12;
+var MAX_RECENTS = 30;
 var HAS_FSA = !!(window.showOpenFilePicker);
 
 var state = { files: [], active: -1, images: {}, query: "", editing: false,
@@ -1164,6 +1173,20 @@ function paintHTML(src){
   doc.appendChild(frag);
 }
 
+/* Word, character and reading time counts for the top bar, measured on the
+   preview text, which is what a reader actually sees. */
+function previewText(){
+  var c = doc.cloneNode(true);
+  Array.prototype.forEach.call(c.querySelectorAll(".copy, .katex-mathml, svg"), function(el){ el.remove(); });
+  return c.textContent.replace(/\s+/g, " ").trim();
+}
+function paintMeta(){
+  var t = previewText(), words = (t.match(/\S+/g) || []).length;
+  meta.textContent = words.toLocaleString() + " words · " + t.length.toLocaleString() + " characters · " +
+    Math.max(1, Math.round(words / 225)) + " min";
+  meta.title = t.replace(/\s/g, "").length.toLocaleString() + " characters without spaces";
+}
+
 /* Everything that turns source text into the decorated preview. */
 function paintDoc(text){
   paintHTML(text);
@@ -1208,8 +1231,7 @@ function render(restoreScroll){
   }
   crumb.textContent = f.name;
   document.title = f.name + " — " + BASE_TITLE;
-  var words = (f.text.trim().match(/\S+/g) || []).length;
-  meta.textContent = words.toLocaleString() + " words · " + Math.max(1, Math.round(words/225)) + " min";
+  paintMeta();
   paintFileList();
 
   if(restoreScroll && f.scroll > 0.01){
@@ -1509,6 +1531,7 @@ async function walkDir(dirHandle, path, out, depth){
 
 function remember(f){
   if(!Store.available() || !f || document.body.classList.contains("embed")) return;
+  f._stored = true;
   var rec = {
     id: f.id,
     name: f.name,
@@ -1621,6 +1644,9 @@ function paintResume(rec){
   var box = $("resume");
   if(!rec){ box.hidden = true; return; }
   box.hidden = false;
+  if(Session.paint(box)) return;
+  $("resumeBtn").textContent = "Reopen";
+  box.querySelector(".r-label").textContent = "Last session";
   $("resumeName").textContent = rec.name;
   $("resumeMeta").textContent = kindLabel(rec) + " · " + ago(rec.openedAt) +
     (rec.scroll > 0.02 ? " · " + Math.round(rec.scroll * 100) + "% read" : "");
@@ -2041,6 +2067,7 @@ function enterEdit(){
   editor.value = f.text;
   setView(Prefs.get().view || "split");
   refreshStatus();
+  paintEditorStatus();
   Sync.reset();
   if(f.source === "new" && !f.handle){
     toast("New file. Ctrl S saves it to your computer");
@@ -2049,7 +2076,12 @@ function enterEdit(){
       ? "Loaded from a link, so edits can only be saved as a copy"
       : "This file was opened without write access, so edits save as a copy");
   }
-  editor.focus();
+  /* start at the top, level with the preview, rather than wherever the
+     caret was left last time */
+  editor.setSelectionRange(0, 0);
+  editor.scrollTop = 0;
+  doc.scrollTop = 0;
+  editor.focus({ preventScroll:true });
 }
 
 function exitEdit(){
@@ -2081,8 +2113,7 @@ function onEdit(){
     if(state.files[state.active] !== f) return;
     paintDoc(f.text);
     Sync.afterRender();
-    var words = (f.text.trim().match(/\S+/g) || []).length;
-    meta.textContent = words.toLocaleString() + " words · " + Math.max(1, Math.round(words/225)) + " min";
+    paintMeta();
   }, 220);
 
   clearTimeout(saveTimer);
@@ -3075,6 +3106,7 @@ var Settings = (function(){
 /* ================= tabs and full screen ================= */
 
 function paintTabs(){
+  Session.save();
   var wrap = $("docTabs"), list = $("tabsList");
   wrap.hidden = state.files.length < 1 || document.body.classList.contains("embed");
   list.innerHTML = "";
@@ -3400,21 +3432,51 @@ var Share = (function(){
     return (m ? m[1].replace(/[\\/:*?"<>|#]+/g, "").trim().slice(0, 60) : "") || "Shared document";
   }
 
+  /* Short link: the text is stored by the site's Worker under a 7 letter id.
+     If that is unreachable (offline, or the page opened from a file), the
+     document is packed into the link instead, which works anywhere but is long. */
+  var lastShare = { text:null, id:null };
+
+  function store(text){
+    if(lastShare.text === text && lastShare.id) return Promise.resolve(lastShare.id);
+    return fetch("/api/share", { method:"POST", body:text, headers:{ "content-type":"text/markdown; charset=utf-8" } })
+      .then(function(r){
+        if(r.status === 413) throw new Error("too_large");
+        if(!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      }).then(function(d){
+        lastShare = { text:text, id:d.id };
+        return d.id;
+      });
+  }
+
+  function show(link, embed, text, note){
+    $("shareLink").value = link;
+    $("embedCode").value = '<iframe src="' + embed + '" width="100%" height="600" loading="lazy" ' +
+      'style="border:1px solid #D6CFC2;border-radius:10px" title="' + titleFrom(text).replace(/"/g, "&quot;") + '"></iframe>';
+    $("shareNote").textContent = note;
+    sheet.hidden = false;
+    $("shareLink").focus();
+    $("shareLink").select();
+  }
+
   function open(){
     var f = state.files[state.active];
     if(!f) return;
     var text = state.editing ? editor.value : f.text;
-    encode(text).then(function(data){
-      var link = base() + "#md=" + data, embed = base() + "#embed=" + data;
-      $("shareLink").value = link;
-      $("embedCode").value = '<iframe src="' + embed + '" width="100%" height="600" loading="lazy" ' +
-        'style="border:1px solid #D6CFC2;border-radius:10px" title="' + titleFrom(text).replace(/"/g, "&quot;") + '"></iframe>';
-      $("shareNote").textContent = link.length > 8000
-        ? "This link is " + Math.round(link.length / 1000) + "k characters long. Most browsers open it fine, but some chat apps and email clients cut long links short, so for very long documents export a file instead."
-        : "Changes you make after sharing are not in the link. Share again to send the new version.";
-      sheet.hidden = false;
-      $("shareLink").focus();
-      $("shareLink").select();
+    toast("Creating link");
+    store(text).then(function(id){
+      var origin = location.origin;
+      show(origin + "/s/" + id, origin + "/e/" + id, text,
+        "Anyone with the link can read it and open their own copy to edit. Changes you make later are not in this link; share again to send a new version.");
+    }).catch(function(err){
+      return encode(text).then(function(data){
+        show(base() + "#md=" + data, base() + "#embed=" + data, text,
+          (err && err.message === "too_large"
+            ? "This document is too big for a short link, so it is packed into the link itself. "
+            : "The short link service could not be reached, so the document is packed into the link itself. ") +
+          "It works the same, it is just long.");
+      });
     }).catch(function(){ toast("Could not create a link for this document"); });
   }
   function close(){ if(sheet.hidden) return false; sheet.hidden = true; return true; }
@@ -3433,18 +3495,35 @@ var Share = (function(){
   sheet.addEventListener("click", function(e){ if(e.target === sheet) close(); });
 
   /* opening a shared link */
+  function openShared(text, embed){
+    openText(titleFrom(text) + ".md", text, "s:" + text.length + ":" + text.slice(0, 24));
+    if(!embed) toast("Opened a shared copy. Edits stay on this device");
+  }
+
   function boot(){
+    /* short links: /s/<id> to open, /e/<id> to embed */
+    var p = /^\/([se])\/([A-Za-z0-9]{4,16})\/?$/.exec(location.pathname);
+    if(p){
+      if(p[1] === "e"){
+        document.body.classList.add("embed");
+        $("embedBadge").href = location.origin + "/s/" + p[2];
+      }
+      fetch("/api/share/" + p[2]).then(function(r){
+        if(r.status === 404) throw new Error("gone");
+        if(!r.ok) throw new Error("http");
+        return r.text();
+      }).then(function(text){ openShared(text, p[1] === "e"); }, function(err){
+        toast(err.message === "gone" ? "That shared document does not exist" : "Could not load that shared document");
+      });
+      return true;
+    }
     var m = /^#(md|embed)=([zu][A-Za-z0-9_-]+)$/.exec(location.hash);
     if(!m) return false;
     if(m[1] === "embed"){
       document.body.classList.add("embed");
       $("embedBadge").href = base() + "#md=" + m[2];
     }
-    decode(m[2]).then(function(text){
-      var name = titleFrom(text) + ".md";
-      openText(name, text, "s:" + m[2].slice(0, 40));
-      if(m[1] === "md") toast("Opened a shared copy. Edits stay on this device");
-    }).catch(function(){ toast("That share link is damaged or incomplete"); });
+    decode(m[2]).then(function(text){ openShared(text, m[1] === "embed"); }).catch(function(){ toast("That share link is damaged or incomplete"); });
     return true;
   }
   window.addEventListener("hashchange", boot);
@@ -3569,6 +3648,94 @@ $("cheatBtn").addEventListener("click", function(){
 function closeTopLayer(){
   return Emoji.close() || Settings.close() || Share.close();
 }
+
+/* ================= session ================= */
+/* The set of open files (and which one was on screen) is kept, so the start
+   screen can bring the whole session back after a reload or the next day.
+   Each file's own copy lives in Recent, which already handles reopening
+   from disk, from a link or from the saved text. */
+
+var Session = (function(){
+  var KEY = "digitum-md-session";
+
+  function read(){
+    try{ return JSON.parse(localStorage.getItem(KEY) || "null"); }catch(e){ return null; }
+  }
+  function save(){
+    if(document.body.classList.contains("embed") || !Store.available()) return;
+    if(!state.files.length) return;      /* closing everything keeps the last session */
+    state.files.forEach(function(f){ if(!f._stored) remember(f); });
+    var cur = state.files[state.active];
+    try{
+      localStorage.setItem(KEY, JSON.stringify({
+        ids: state.files.map(function(f){ return f.id; }),
+        names: state.files.map(function(f){ return f.name; }),
+        active: cur ? cur.id : null,
+        at: Date.now()
+      }));
+    }catch(e){}
+  }
+
+  /* fills the start screen card when the last session had several files */
+  function paint(box){
+    var s = read();
+    if(!s || !s.ids || s.ids.length < 2) return false;
+    box.querySelector(".r-label").textContent = "Last session · " + s.ids.length + " files";
+    $("resumeName").textContent = s.names.slice(0, 3).join(", ") + (s.names.length > 3 ? " and " + (s.names.length - 3) + " more" : "");
+    $("resumeMeta").textContent = ago(s.at);
+    $("resumeBtn").textContent = "Restore all";
+    $("resumeBtn").onclick = restore;
+    return true;
+  }
+
+  async function restore(){
+    var s = read();
+    if(!s) return;
+    var list = await Store.all().catch(function(){ return []; }), byId = {};
+    list.forEach(function(r){ byId[r.id] = r; });
+    var missing = 0;
+    for(var i=0;i<s.ids.length;i++){
+      var rec = byId[s.ids[i]];
+      if(!rec){ missing++; continue; }
+      if(indexOfIdStrict(rec.id) > -1) continue;
+      await reopen(rec);
+    }
+    var at = indexOfIdStrict(s.active);
+    if(at > -1 && at !== state.active){ state.active = at; render(true); }
+    toast("Restored " + (s.ids.length - missing) + " file" + (s.ids.length - missing === 1 ? "" : "s") +
+      (missing ? ", " + missing + " no longer in history" : ""));
+  }
+
+  return { save:save, paint:paint, restore:restore };
+})();
+
+/* ================= editor status bar ================= */
+/* Line and column, characters and words in the source, and the size of
+   the selection, which also covers text selected in the preview. */
+(function(){
+  var bar = $("editorStatus"), queued = 0;
+  function n(x){ return x.toLocaleString(); }
+  function paint(){
+    queued = 0;
+    if(!state.editing) return;
+    var v = editor.value, s = editor.selectionStart, e = editor.selectionEnd;
+    var before = v.slice(0, s), line = before.split("\n").length;
+    var col = s - before.lastIndexOf("\n");
+    var words = (v.match(/\S+/g) || []).length;
+    var html = "<span>Ln <b>" + n(line) + "</b>, Col <b>" + n(col) + "</b></span>" +
+      "<span><b>" + n(v.length) + "</b> characters</span><span><b>" + n(words) + "</b> words</span>";
+    if(e > s){
+      var sel = v.slice(s, e);
+      var sw = (sel.match(/\S+/g) || []).length;
+      html += "<span><b>" + n(sel.length) + "</b> character" + (sel.length === 1 ? "" : "s") + ", <b>" + n(sw) + "</b> word" + (sw === 1 ? "" : "s") + " selected</span>";
+    }
+    bar.innerHTML = html;
+  }
+  function later(){ if(!queued) queued = requestAnimationFrame(paint); }
+  ["input", "keyup", "mouseup", "select", "focus"].forEach(function(t){ editor.addEventListener(t, later); });
+  document.addEventListener("selectionchange", function(){ if(state.editing) later(); });
+  window.paintEditorStatus = later;
+})();
 
 /* ================= export ================= */
 /* Markdown, plain HTML, styled HTML, PDF (through the print dialog, so the
@@ -3988,7 +4155,7 @@ async function runChecks(){
   results.push({ ok:secure, label:"Served over HTTPS", hint:"Install only works on https." });
 
   try{
-    var mr = await fetch("manifest.json", { cache:"no-store" });
+    var mr = await fetch("/manifest.json", { cache:"no-store" });
     var mj = mr.ok ? await mr.json() : null;
     results.push({
       ok: !!(mj && mj.name && mj.icons && mj.icons.length),
@@ -4000,7 +4167,7 @@ async function runChecks(){
   }
 
   try{
-    var ir = await fetch("icons/icon-512.png", { cache:"no-store" });
+    var ir = await fetch("/icons/icon-512.png", { cache:"no-store" });
     results.push({ ok:ir.ok, label:"App icons reachable", hint:"Upload the icons folder." });
   }catch(e){
     results.push({ ok:false, label:"App icons reachable", hint:"Upload the icons folder." });

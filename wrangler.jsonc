@@ -1,12 +1,17 @@
 {
-  // Static site served by Cloudflare Workers (assets only, no Worker script).
+  // Static site plus a small Worker for short share links.
   // Workers Builds runs `npx wrangler deploy` on every push to main.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "markdown-viewer",
+  "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
   },
+  "kv_namespaces": [
+    { "binding": "SHARES", "id": "6da1a2c5158c4dbf864615e4682c3d7d" }
+  ],
   "routes": [
     { "pattern": "markdown.digitum.marketing", "custom_domain": true }
   ]

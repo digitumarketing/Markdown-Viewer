@@ -23,6 +23,18 @@ wordmark on light, the lime and cream wordmark on dark.
 
 ## Deploying (Cloudflare Workers)
 
+`src/worker.js` handles the short share links and hands everything else to
+the static files:
+
+| Route | Does |
+| --- | --- |
+| `POST /api/share` | Stores the posted markdown (max 512 KB) in the `SHARES` KV namespace, returns `{ "id": "aB3dE7x" }` |
+| `GET /api/share/:id` | Returns the stored markdown |
+| `/s/:id`, `/e/:id` | Serve the app, which loads that share (`/e/` in embed mode) |
+
+The KV namespace is `markdown-viewer-shares`; its id is in `wrangler.jsonc`.
+Shares do not expire.
+
 The site is the `public/` folder. `wrangler.jsonc` at the repo root deploys it
 as a static-assets Worker named `markdown-viewer` and attaches the custom
 domain `markdown.digitum.marketing`.
@@ -96,7 +108,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v9`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v10`) to force old caches out.
 
 ## Editing and saving
 
@@ -199,14 +211,21 @@ lower pixel ratio to stay inside browser canvas limits.
   is the default; on narrow screens Split shows the source.
 - **Sync scrolling.** In Split view the two panes scroll together, block by
   block ("Scroll" in the editor bar, or Settings).
-- **Line numbers** in the editor gutter (Settings).
+- **Line numbers** in the editor gutter (Settings), and a status bar under
+  the editor with line and column, characters, words and the selection size.
+  The top bar shows words, characters and reading time for the preview.
+- **Sessions.** The open files are remembered. When the last session had
+  several files, the start screen offers "Restore all", which reopens every
+  tab (from disk where the browser allows, otherwise from the saved copy).
 - **Maths.** `$inline$` and `$$display$$` LaTeX, drawn with KaTeX, which
   loads from jsDelivr only when a document contains maths. Prices like
   "$5 and $10" are left alone.
-- **Share and embed.** The share button packs the whole document into the
-  link's `#md=` fragment (deflate + base64url), so nothing is uploaded and
-  each recipient gets their own editable copy. The embed code uses
-  `#embed=`, which shows only the document plus a small "Open in" badge.
+- **Share and embed.** The share button stores a copy of the document with
+  the site's Worker and gives a short link, `/s/<id>`, plus an embed code
+  for `/e/<id>`, which shows only the document and a small "Open in" badge.
+  Each recipient gets their own editable copy. If the Worker cannot be
+  reached, or the document is over 512 KB, the link falls back to packing
+  the document into the `#md=` fragment instead (long, but needs no server).
 - **Copy formatted text / Copy HTML code / Print** in the export menu. The
   formatted copy pastes into Gmail, Google Docs and WordPress.
 - **Settings** (gear): text size, page width, font, line numbers, sync
