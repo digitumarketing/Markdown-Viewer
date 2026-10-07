@@ -100,8 +100,13 @@
       },
       "icons": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192",
+          "src": "/icons/icon-128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        },
+        {
+          "src": "/icons/icon-256.png",
+          "sizes": "256x256",
           "type": "image/png"
         },
         {
@@ -110,7 +115,13 @@
           "type": "image/png"
         }
       ],
-      "launch_type": "multiple-clients"
+      "launch_type": "single-client"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  }
 }
