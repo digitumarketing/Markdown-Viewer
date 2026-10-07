@@ -607,6 +607,41 @@ body.editing.v-editor .editor-wrap .editor{padding-left:max(14px,calc((100% - 82
 .empty h1 em{font-style:normal;background:linear-gradient(100deg,transparent 0 2px,var(--lime) 2px 97%,transparent 97%);background-size:100% 42%;background-repeat:no-repeat;background-position:0 88%}
 .empty p.lede{color:var(--muted);margin:0 0 26px;font-size:16px;line-height:1.6}
 
+/* Header navigation and the Tools menu (same markup as the tool pages) */
+.topbar .site-nav{display:flex;align-items:center;gap:2px;position:relative;min-width:0;flex-shrink:0}
+.topbar .nav-link{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;white-space:nowrap;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500}
+.topbar .nav-link:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.topbar .nav-tools[aria-expanded="true"]{color:var(--ink);background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.topbar .nav-tools svg{transition:transform .15s}
+.topbar .nav-tools[aria-expanded="true"] svg{transform:rotate(180deg)}
+/* with a document open, only the Tools menu stays */
+body.doc-open .topbar .nav-link:not(.nav-tools){display:none}
+@media (max-width:1280px){ .topbar .nav-link:not(.nav-tools){display:none} }
+@media (max-width:640px){ .topbar .nav-tools{padding:6px 8px;font-size:13px} }
+.mega{
+  position:fixed;top:var(--mega-top,60px);left:50%;transform:translateX(-50%);z-index:70;
+  width:min(980px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow:auto;
+  display:grid;grid-template-columns:repeat(3,1fr);padding:22px 8px;border-radius:14px;
+  background:var(--paper);border:1px solid var(--rule);box-shadow:0 18px 50px rgba(39,35,32,.22);
+}
+.mega-col{padding:0 18px;border-left:1px solid var(--rule)}
+.mega-col:first-child{border-left:0}
+.mega-h{font-weight:600;font-size:15.5px}
+.mega-sub{font-size:13px;color:var(--muted);margin:2px 0 12px;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+.mega a{display:block;padding:8px 10px;margin:0 -10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:15px}
+.mega a:hover,.mega a:focus{background:var(--panel);color:var(--ink);outline:none}
+.mega a[aria-current="page"]{color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--lime)}
+@media (max-width:760px){
+  .mega{grid-template-columns:1fr;padding:12px 4px}
+  .mega-col{border-left:0;border-top:1px solid var(--rule);padding:12px 16px}
+  .mega-col:first-child{border-top:0}
+}
+.seo .tool-dir{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.seo .tool-col h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.seo .tool-dir .tools{display:grid;grid-template-columns:1fr;gap:8px}
+@media (max-width:900px){ .seo .tool-dir{grid-template-columns:1fr} }
+.empty{max-width:900px}
+
 /* About, how-to and FAQ under the tool: plain content for readers and search */
 .seo{margin-top:56px;padding-top:36px;border-top:1px solid var(--rule);font-size:15.5px;line-height:1.65}
 .seo h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:40px 0 14px;line-height:1.25}
@@ -797,6 +832,7 @@ body.dragging #dropveil{display:grid}
         <img class="logo-dark" src="/brand/mark-lime.png" alt="" width="17" height="23">
         <span>Digitum Markdown Viewer</span>
       </button>
+      <!--nav:start--><nav class="site-nav" aria-label="Main"><a class="nav-link" href="/">Markdown Viewer</a><a class="nav-link" href="/markdown-to-pdf">Markdown to PDF</a><a class="nav-link" href="/pdf-to-markdown">PDF to Markdown</a><a class="nav-link" href="/paste-to-markdown">Paste to Markdown</a><button class="nav-link nav-tools" id="toolsBtn" aria-haspopup="true" aria-expanded="false" aria-controls="megaMenu">Tools <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5l3 3 3-3"/></svg></button><div class="mega" id="megaMenu" role="menu" hidden><div class="mega-col"><div class="mega-h">From Markdown</div><div class="mega-sub">Export and publish</div><a href="/markdown-to-pdf" role="menuitem">Markdown to PDF</a><a href="/markdown-to-html" role="menuitem">Markdown to HTML</a><a href="/markdown-to-word" role="menuitem">Markdown to Word</a><a href="/markdown-to-excel" role="menuitem">Markdown to Excel</a><a href="/markdown-to-image" role="menuitem">Markdown to Image</a><a href="/markdown-to-text" role="menuitem">Markdown to Text</a><a href="/markmap-editor" role="menuitem">Markmap Editor</a></div><div class="mega-col"><div class="mega-h">To Markdown</div><div class="mega-sub">Import and extract</div><a href="/pdf-to-markdown" role="menuitem">PDF to Markdown</a><a href="/html-to-markdown" role="menuitem">HTML to Markdown</a><a href="/word-to-markdown" role="menuitem">Word to Markdown</a><a href="/excel-to-markdown" role="menuitem">Excel to Markdown</a><a href="/image-to-markdown" role="menuitem">Image to Markdown</a><a href="/text-to-markdown" role="menuitem">Text to Markdown</a><a href="/paste-to-markdown" role="menuitem">Paste to Markdown</a></div><div class="mega-col"><div class="mega-h">Markdown tools</div><div class="mega-sub">Read, edit and visualise</div><a href="/" role="menuitem">Markdown Viewer</a><a href="/markdown-reader" role="menuitem">Markdown Reader</a><a href="/markdown-editor" role="menuitem">Markdown Editor</a><a href="/markdown-table-generator" role="menuitem">Markdown Table</a><a href="/markdown-compare" role="menuitem">Markdown Compare</a><a href="/discord-markdown" role="menuitem">Discord Markdown</a><a href="/obsidian-markdown" role="menuitem">Obsidian Markdown</a><a href="/github-readme-viewer" role="menuitem">GitHub README Viewer</a><a href="/mermaid-live-editor" role="menuitem">Mermaid Live Editor</a><a href="/markdown-cheat-sheet" role="menuitem">Markdown Cheat Sheet</a></div></div></nav><!--nav:end-->
       <span class="divider" id="div1" hidden></span>
       <span class="crumb" id="crumb"></span>
       <span class="meta" id="meta"></span>
@@ -905,8 +941,8 @@ body.dragging #dropveil{display:grid}
 <details><summary>Does it work offline or as a desktop app?</summary><p>Yes. Install it from the Install app button and it runs in its own window, works offline, and can be set as the app that opens .md files on Windows, macOS, ChromeOS and Android.</p></details>
 <details><summary>Which file types can it open?</summary><p>Markdown files with the .md, .markdown, .mdx and .mkd extensions, plain .txt files, and any images in the same folder that the document refers to.</p></details>
 </div>
-<h2>More free markdown tools</h2>
-<nav class="tools" aria-label="Markdown tools"><a href="/markdown-editor"><strong>Markdown editor</strong><span>Write with a live preview</span></a><a href="/markdown-to-pdf"><strong>Markdown to PDF</strong><span>Print-ready PDF in one click</span></a><a href="/markdown-to-html"><strong>Markdown to HTML</strong><span>Clean or styled HTML</span></a><a href="/markdown-cheat-sheet"><strong>Markdown cheat sheet</strong><span>Every bit of syntax, with examples</span></a></nav>
+<h2>All free markdown tools</h2>
+<div class="tool-dir"><div class="tool-col"><h3>From Markdown</h3><nav class="tools" aria-label="From Markdown"><a href="/markdown-to-pdf"><strong>Markdown to PDF</strong><span>Print-ready PDF</span></a><a href="/markdown-to-html"><strong>Markdown to HTML</strong><span>Clean or styled HTML</span></a><a href="/markdown-to-word"><strong>Markdown to Word</strong><span>Download a .docx</span></a><a href="/markdown-to-excel"><strong>Markdown to Excel</strong><span>Tables to .xlsx or CSV</span></a><a href="/markdown-to-image"><strong>Markdown to Image</strong><span>PNG or JPG</span></a><a href="/markdown-to-text"><strong>Markdown to Text</strong><span>Strip the syntax</span></a><a href="/markmap-editor"><strong>Markmap Editor</strong><span>Markdown as a mind map</span></a></nav></div><div class="tool-col"><h3>To Markdown</h3><nav class="tools" aria-label="To Markdown"><a href="/pdf-to-markdown"><strong>PDF to Markdown</strong><span>Extract text from PDFs</span></a><a href="/html-to-markdown"><strong>HTML to Markdown</strong><span>Clean MD from HTML</span></a><a href="/word-to-markdown"><strong>Word to Markdown</strong><span>Convert .docx files</span></a><a href="/excel-to-markdown"><strong>Excel to Markdown</strong><span>Sheets to MD tables</span></a><a href="/image-to-markdown"><strong>Image to Markdown</strong><span>OCR text from images</span></a><a href="/text-to-markdown"><strong>Text to Markdown</strong><span>Format plain text</span></a><a href="/paste-to-markdown"><strong>Paste to Markdown</strong><span>From Docs, Word or the web</span></a></nav></div><div class="tool-col"><h3>Markdown tools</h3><nav class="tools" aria-label="Markdown tools"><a href="/markdown-reader"><strong>Markdown Reader</strong><span>Distraction-free reading</span></a><a href="/markdown-editor"><strong>Markdown Editor</strong><span>Live preview editor</span></a><a href="/markdown-table-generator"><strong>Markdown Table</strong><span>Build tables visually</span></a><a href="/markdown-compare"><strong>Markdown Compare</strong><span>Diff two versions</span></a><a href="/discord-markdown"><strong>Discord Markdown</strong><span>Preview Discord messages</span></a><a href="/obsidian-markdown"><strong>Obsidian Markdown</strong><span>Callouts and wikilinks</span></a><a href="/github-readme-viewer"><strong>GitHub README Viewer</strong><span>Any repo's README</span></a><a href="/mermaid-live-editor"><strong>Mermaid Live Editor</strong><span>Diagrams from text</span></a><a href="/markdown-cheat-sheet"><strong>Markdown Cheat Sheet</strong><span>Syntax with examples</span></a></nav></div></div>
 <!--seo:end--></section>
       </div>
       <div class="editor-pane" id="editorPane" hidden>
@@ -1049,6 +1085,7 @@ body.dragging #dropveil{display:grid}
   </div>
 </div>
 
+<script src="/nav.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
@@ -1184,6 +1221,31 @@ function toHTML(src){
   return fallbackParse(src);
 }
 
+/* Markdown may carry raw HTML, and documents arrive from links and shared
+   links as well as the user's own files. Rendered HTML is parsed into an
+   inert <template> and stripped of scripts, frames and event handlers
+   before it reaches the page. */
+function sanitizeFragment(frag){
+  Array.prototype.forEach.call(frag.querySelectorAll("script, iframe, object, embed, base, meta, link, form, frame, frameset"), function(n){ n.remove(); });
+  Array.prototype.forEach.call(frag.querySelectorAll("*"), function(n){
+    Array.prototype.slice.call(n.attributes).forEach(function(a){
+      var name = a.name.toLowerCase(), v = (a.value || "").replace(/[\s\u0000-\u001f]/g, "").toLowerCase();
+      if(name.indexOf("on") === 0) n.removeAttribute(a.name);
+      else if((name === "href" || name === "src" || name === "xlink:href" || name === "action" || name === "formaction") &&
+              (v.indexOf("javascript:") === 0 || v.indexOf("vbscript:") === 0 || (v.indexOf("data:") === 0 && name !== "src")))
+        n.removeAttribute(a.name);
+    });
+  });
+  return frag;
+}
+function setSafeHTML(target, html){
+  var t = document.createElement("template");
+  t.innerHTML = html;
+  sanitizeFragment(t.content);
+  target.textContent = "";
+  target.appendChild(t.content);
+}
+
 /* Renders the document block by block so every top level element in the
    preview knows which characters of the source produced it. Each element
    gets data-b (its block number) and state.blocks[n] holds { s, e, cs }:
@@ -1193,14 +1255,14 @@ function paintHTML(src){
   state.blocks = [];
   state.blockGen = (state.blockGen || 0) + 1;
   if(!(window.marked && window.marked.lexer && window.marked.parser)){
-    doc.innerHTML = toHTML(src);
+    setSafeHTML(doc, toHTML(src));
     return;
   }
   var tokens, norm = src.replace(/\r\n?/g, "\n");
   /* no options here: passing any replaces marked's defaults, and with them
      the maths extension (GFM is on by default) */
   try{ tokens = window.marked.lexer(norm); }
-  catch(e){ doc.innerHTML = toHTML(src); return; }
+  catch(e){ setSafeHTML(doc, toHTML(src)); return; }
 
   /* Offsets refer to the LF-normalised text, which is also exactly what a
      textarea's value holds, so they line up with the editor. */
@@ -1221,6 +1283,7 @@ function paintHTML(src){
     try{ html = window.marked.parser(list); }
     catch(err){ html = ""; }
     tpl.innerHTML = html;
+    sanitizeFragment(tpl.content);
 
     var n = state.blocks.length, cs = s;
     if(tok.type === "code" && tok.codeBlockStyle !== "indented"){
@@ -1293,6 +1356,7 @@ function render(restoreScroll){
   applySearch();
 
   $("div1").hidden = false;
+  document.body.classList.add("doc-open");
   $("closeBtn").hidden = false;
   $("editBtn").hidden = false;
   $("exportBtn").hidden = false;
@@ -1880,6 +1944,7 @@ function goHome(msg){
   toc.innerHTML = "";
   state.active = -1;
   $("div1").hidden = true;
+  document.body.classList.remove("doc-open");
   $("closeBtn").hidden = true;
   $("editBtn").hidden = true;
   $("exportBtn").hidden = true;
@@ -4362,6 +4427,15 @@ if(!Share.boot()){
   if(src) loadURL(src);
   /* links from the landing pages: ?open=cheatsheet, ?new=1 */
   else if(params.get("open") === "cheatsheet") $("cheatBtn").click();
+  else if(params.get("handoff") === "1"){
+    /* a converter page handed over its result: open it as a new document */
+    try{
+      var h = JSON.parse(localStorage.getItem("digitum-md-handoff") || "null");
+      localStorage.removeItem("digitum-md-handoff");
+      if(h && h.text) openText(h.name || "Converted.md", h.text, "h:" + (h.at || Date.now()));
+    }catch(e){}
+    history.replaceState(null, "", "/");
+  }
   else if(params.get("new") === "1") newFile();
 }
 })();

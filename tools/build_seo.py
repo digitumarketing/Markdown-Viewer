@@ -4,9 +4,14 @@
 Writes:
   public/index.html   the home page content between <!--seo:start--> and
                       <!--seo:end-->, and its JSON-LD in <script id="ldjson">
-  src/pages.js        title, meta, hero and content for the landing pages,
-                      which the Worker serves by rewriting index.html
+  src/pages.js        title, meta, hero and content for every other page,
+                      which the Worker serves by rewriting index.html (the
+                      full viewer) or tool.html (a converter or tool)
+  public/index.html,  the header navigation and Tools menu between
+  public/tool.html    <!--nav:start--> and <!--nav:end-->
   public/sitemap.xml  every indexable URL
+
+Tool page copy lives in tools/tool_pages.py.
 
 Run after changing any copy here:  python3 tools/build_seo.py
 """
@@ -14,7 +19,11 @@ import html
 import json
 import pathlib
 import re
+import sys
 from datetime import date
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from tool_pages import TOOL_PAGES  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = "https://markdown.digitum.marketing"
@@ -22,13 +31,41 @@ ORG = {"@type": "Organization", "@id": "https://digitum.marketing/#org", "name":
        "url": "https://digitum.marketing/", "logo": SITE + "/brand/logo-charcoal.png"}
 TODAY = date.today().isoformat()
 
-TOOLS = [
-    ("/", "Markdown viewer", "Open and read any .md file"),
-    ("/markdown-editor", "Markdown editor", "Write with a live preview"),
-    ("/markdown-to-pdf", "Markdown to PDF", "Print-ready PDF in one click"),
-    ("/markdown-to-html", "Markdown to HTML", "Clean or styled HTML"),
-    ("/markdown-cheat-sheet", "Markdown cheat sheet", "Every bit of syntax, with examples"),
+# The Tools menu and the tool directory on every page, in three groups.
+NAV = [
+    ("From Markdown", "Export and publish", [
+        ("/markdown-to-pdf", "Markdown to PDF", "Print-ready PDF"),
+        ("/markdown-to-html", "Markdown to HTML", "Clean or styled HTML"),
+        ("/markdown-to-word", "Markdown to Word", "Download a .docx"),
+        ("/markdown-to-excel", "Markdown to Excel", "Tables to .xlsx or CSV"),
+        ("/markdown-to-image", "Markdown to Image", "PNG or JPG"),
+        ("/markdown-to-text", "Markdown to Text", "Strip the syntax"),
+        ("/markmap-editor", "Markmap Editor", "Markdown as a mind map"),
+    ]),
+    ("To Markdown", "Import and extract", [
+        ("/pdf-to-markdown", "PDF to Markdown", "Extract text from PDFs"),
+        ("/html-to-markdown", "HTML to Markdown", "Clean MD from HTML"),
+        ("/word-to-markdown", "Word to Markdown", "Convert .docx files"),
+        ("/excel-to-markdown", "Excel to Markdown", "Sheets to MD tables"),
+        ("/image-to-markdown", "Image to Markdown", "OCR text from images"),
+        ("/text-to-markdown", "Text to Markdown", "Format plain text"),
+        ("/paste-to-markdown", "Paste to Markdown", "From Docs, Word or the web"),
+    ]),
+    ("Markdown tools", "Read, edit and visualise", [
+        ("/", "Markdown Viewer", "Open any .md file"),
+        ("/markdown-reader", "Markdown Reader", "Distraction-free reading"),
+        ("/markdown-editor", "Markdown Editor", "Live preview editor"),
+        ("/markdown-table-generator", "Markdown Table", "Build tables visually"),
+        ("/markdown-compare", "Markdown Compare", "Diff two versions"),
+        ("/discord-markdown", "Discord Markdown", "Preview Discord messages"),
+        ("/obsidian-markdown", "Obsidian Markdown", "Callouts and wikilinks"),
+        ("/github-readme-viewer", "GitHub README Viewer", "Any repo's README"),
+        ("/mermaid-live-editor", "Mermaid Live Editor", "Diagrams from text"),
+        ("/markdown-cheat-sheet", "Markdown Cheat Sheet", "Syntax with examples"),
+    ]),
 ]
+QUICK = [("/", "Markdown Viewer"), ("/markdown-to-pdf", "Markdown to PDF"),
+         ("/pdf-to-markdown", "PDF to Markdown"), ("/paste-to-markdown", "Paste to Markdown")]
 
 FEATURES = [
     ("Open any .md file", "Drag in files or a whole folder, open one from a link, or paste markdown text. "
@@ -302,12 +339,29 @@ def features_html(title, items):
 
 
 def tools_html(current):
-    links = []
-    for path, name, sub in TOOLS:
-        if path == current:
-            continue
-        links.append('<a href="%s"><strong>%s</strong><span>%s</span></a>' % (path, name, sub))
-    return '<h2>More free markdown tools</h2>\n<nav class="tools" aria-label="Markdown tools">%s</nav>' % "".join(links)
+    """Every tool, grouped, minus the page you are on: the site's internal links."""
+    cols = []
+    for title, sub, items in NAV:
+        links = "".join('<a href="%s"><strong>%s</strong><span>%s</span></a>' % (p, n, d)
+                        for p, n, d in items if p != current)
+        cols.append('<div class="tool-col"><h3>%s</h3><nav class="tools" aria-label="%s">%s</nav></div>'
+                    % (title, title, links))
+    return '<h2>All free markdown tools</h2>\n<div class="tool-dir">%s</div>' % "".join(cols)
+
+
+def nav_html():
+    """Header links and the Tools menu, shared by index.html and tool.html."""
+    quick = "".join('<a class="nav-link" href="%s">%s</a>' % (p, n) for p, n in QUICK)
+    cols = []
+    for title, sub, items in NAV:
+        links = "".join('<a href="%s" role="menuitem">%s</a>' % (p, n) for p, n, _ in items)
+        cols.append('<div class="mega-col"><div class="mega-h">%s</div><div class="mega-sub">%s</div>%s</div>'
+                    % (title, sub, links))
+    return ('<nav class="site-nav" aria-label="Main">' + quick +
+            '<button class="nav-link nav-tools" id="toolsBtn" aria-haspopup="true" aria-expanded="false" '
+            'aria-controls="megaMenu">Tools <svg width="10" height="10" viewBox="0 0 10 10" fill="none" '
+            'stroke="currentColor" stroke-width="1.5"><path d="M2 3.5l3 3 3-3"/></svg></button>'
+            '<div class="mega" id="megaMenu" role="menu" hidden>' + "".join(cols) + '</div></nav>')
 
 
 def cheatsheet_html():
@@ -360,15 +414,17 @@ def landing(path, p):
         parts.append('<p class="cta-row"><a class="btn primary" href="%s">%s</a></p>' % (p["cta"][1], p["cta"][0]))
     if p.get("cheatsheet"):
         parts.append(cheatsheet_html())
-    for title, _, items in p["sections"]:
+    for title, _, items in p.get("sections", []):
         parts.append(features_html(title, items))
-    if p["steps"]:
+    if p.get("features"):
+        parts.append(features_html("Why use this " + p["eyebrow"].lower() + " tool", p["features"]))
+    if p.get("steps"):
         parts.append(steps_html(p["steps_title"], p["steps"]))
     parts.append(faq_html(p["faq"]))
     parts.append(tools_html(path))
     name = p["eyebrow"]
     graph = [app_ld(url, "Digitum " + name, p["desc"]), ORG, breadcrumb_ld(url, name), faq_ld(p["faq"], url)]
-    if p["steps"]:
+    if p.get("steps"):
         graph.append(howto_ld(p["steps_title"], p["steps"], url))
     return "\n".join(parts), {"@context": "https://schema.org", "@graph": graph}
 
@@ -386,21 +442,36 @@ def main():
                lambda m: "<!--seo:start-->\n" + body + "\n<!--seo:end-->", s, flags=re.S)
     s = re.sub(r'(<script type="application/ld\+json" id="ldjson">).*?(</script>)',
                lambda m: m.group(1) + ld_text(ld) + m.group(2), s, flags=re.S)
+    nav = nav_html()
+    s = re.sub(r"<!--nav:start-->.*?<!--nav:end-->", lambda m: "<!--nav:start-->" + nav + "<!--nav:end-->", s, flags=re.S)
     idx.write_text(s)
+    tool_shell = ROOT / "public" / "tool.html"
+    if tool_shell.exists():
+        t = tool_shell.read_text()
+        t = re.sub(r"<!--nav:start-->.*?<!--nav:end-->", lambda m: "<!--nav:start-->" + nav + "<!--nav:end-->", t, flags=re.S)
+        tool_shell.write_text(t)
+
+    all_pages = dict(PAGES)
+    for k, v in PAGES.items():
+        v.setdefault("shell", "app")
+    all_pages.update(TOOL_PAGES)
+    for path, p in all_pages.items():
+        assert len(p["desc"]) <= 160, (path, len(p["desc"]))
 
     out = {}
-    for path, p in PAGES.items():
+    for path, p in all_pages.items():
         content, pld = landing(path, p)
         out[path] = {
             "title": p["title"], "desc": p["desc"], "eyebrow": p["eyebrow"], "h1": p["h1"],
             "lede": p["lede"], "content": content, "ld": ld_text(pld),
             "ogTitle": p["title"].split(" | ")[0],
+            "shell": p.get("shell", "app"), "tool": p.get("tool", ""),
         }
     js = ("// Generated by tools/build_seo.py. Edit the copy there and run it again.\n"
           "export const SITE = %s;\nexport const PAGES = %s;\n" % (json.dumps(SITE), json.dumps(out, indent=1, ensure_ascii=False)))
     (ROOT / "src" / "pages.js").write_text(js)
 
-    urls = [("/", "1.0")] + [(p, "0.8") for p in PAGES]
+    urls = [("/", "1.0")] + [(p, "0.8") for p in all_pages]
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for path, prio in urls:
@@ -408,7 +479,7 @@ def main():
                   % (SITE, path, TODAY, prio))
     sm.append("</urlset>")
     (ROOT / "public" / "sitemap.xml").write_text("\n".join(sm) + "\n")
-    print("home + %d landing pages + sitemap written" % len(PAGES))
+    print("home + %d pages + nav + sitemap written" % len(all_pages))
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 // Only exists to make the app installable and usable offline once visited.
 // It never touches files the user opens; those stay entirely in the page's memory.
 
-var CACHE = "digitum-md-viewer-v11";
+var CACHE = "digitum-md-viewer-v12";
 var CORE_ASSETS = [
   "/",
   "/index.html",
@@ -14,7 +14,10 @@ var CORE_ASSETS = [
   "/brand/logo-charcoal.png",
   "/brand/logo-lime-cream.png",
   "/brand/mark-charcoal.png",
-  "/brand/mark-lime.png"
+  "/brand/mark-lime.png",
+  "/nav.js",
+  "/tools.js",
+  "/tools.css"
 ];
 
 self.addEventListener("install", function(event){

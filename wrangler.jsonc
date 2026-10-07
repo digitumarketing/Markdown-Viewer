@@ -11,7 +11,12 @@
     "not_found_handling": "404-page",
     // these never match a file, and browsers asking for a page would otherwise
     // get 404.html straight from the assets layer without the Worker running
-    "run_worker_first": ["/api/*", "/s/*", "/e/*", "/markdown-*", "/Markdown-*"]
+    "run_worker_first": [
+      "/api/*", "/s/*", "/e/*", "/tool", "/tool.html",
+      "/markdown-*", "/Markdown-*", "/markmap-*", "/pdf-to-*", "/html-to-*", "/word-to-*",
+      "/excel-to-*", "/image-to-*", "/text-to-*", "/paste-to-*", "/discord-*", "/obsidian-*",
+      "/github-*", "/mermaid-*"
+    ]
   },
   "kv_namespaces": [
     { "binding": "SHARES", "id": "6da1a2c5158c4dbf864615e4682c3d7d" }

@@ -8,8 +8,9 @@
  *   GET  /api/share/:id    ->  the markdown text
  *   GET  /s/:id, /e/:id    ->  the app (index.html), which then loads :id
  *
- *   GET  /markdown-editor and the other paths in PAGES  ->  the app, with
- *        that page's title, description, heading and content rewritten in
+ *   GET  /markdown-editor and the other paths in PAGES  ->  the viewer
+ *        (index.html) or the tool shell (tool.html), with that page's
+ *        title, description, heading, content and tool id written in
  *
  * Shared documents live in the SHARES KV namespace under "doc:<id>".
  * Shared and embedded documents are kept out of search results.
@@ -76,11 +77,13 @@ function withHeaders(response, extra) {
 
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/* index.html, with one landing page's copy written into it */
+/* index.html or tool.html, with one page's copy written into it */
 async function landingPage(request, env, path) {
   const page = PAGES[path];
   const url = SITE + path;
-  const base = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+  // "/tool" and "/" rather than the .html names, which the assets layer redirects
+  const shell = page.shell === "tool" ? "/tool" : "/";
+  const base = await env.ASSETS.fetch(new Request(new URL(shell, request.url), request));
   const setAttr = (name, value) => ({ element(el) { el.setAttribute(name, value); } });
   const setHTML = (html) => ({ element(el) { el.setInnerContent(html, { html: true }); } });
 
@@ -98,7 +101,13 @@ async function landingPage(request, env, path) {
     .on("#heroTitle", setHTML(page.h1))
     .on("#heroLede", setHTML(esc(page.lede)))
     .on("#seoContent", setHTML(page.content))
-    .on("body", setAttr("data-page", path.slice(1)))
+    .on("#crumbName", setHTML(esc(page.eyebrow)))
+    .on("body", {
+      element(el) {
+        el.setAttribute("data-page", path.slice(1));
+        if (page.tool) el.setAttribute("data-tool", page.tool);
+      },
+    })
     .transform(base);
 
   return withHeaders(rewritten, { "cache-control": "public, max-age=0, must-revalidate" });
@@ -120,6 +129,8 @@ export default {
     const clean = path.length > 1 ? path.replace(/\/+$/, "").toLowerCase() : path;
     if (clean !== path && PAGES[clean]) return Response.redirect(new URL(clean + url.search, url), 301);
     if (PAGES[path]) return landingPage(request, env, path);
+    /* the bare tool shell is not a page of its own */
+    if (path === "/tool" || path === "/tool.html") return Response.redirect(new URL("/", url), 301);
 
     if (/^\/[se]\/[A-Za-z0-9]{4,16}\/?$/.test(path)) {
       /* someone's shared document: usable, but not for search engines.
