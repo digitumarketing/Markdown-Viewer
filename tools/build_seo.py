@@ -543,7 +543,7 @@ def landing(path, p):
     for title, _, items in p.get("sections", []):
         parts.append(features_html(title, items))
     if p.get("features"):
-        parts.append(features_html(p.get("features_title") or "Why use this " + p["eyebrow"].lower() + " tool",
+        parts.append(features_html(p.get("features_title") or "Why use this " + p["eyebrow"] + " tool",
                                    p["features"]))
     if p.get("steps"):
         parts.append(steps_html(p["steps_title"], p["steps"]))

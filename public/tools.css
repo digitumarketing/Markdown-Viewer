@@ -255,6 +255,8 @@ table.grid .row-x{min-width:0;border:0;width:28px;text-align:center;color:var(--
 .seo .feat p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
 .seo .steps{margin:0;padding-left:22px}
 .seo .steps li{margin:6px 0;padding-left:4px}
+.seo .uses{margin:0;padding-left:22px}
+.seo .uses li{margin:6px 0;padding-left:4px}
 .seo code,.seo kbd{font-family:var(--mono);font-size:.86em;background:var(--panel);padding:.1em .35em;border-radius:4px;border:1px solid var(--rule)}
 .seo .faq details{border-bottom:1px solid var(--rule);padding:4px 0}
 .seo .faq summary{cursor:pointer;font-weight:600;padding:10px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
