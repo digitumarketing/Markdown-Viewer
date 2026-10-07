@@ -34,8 +34,8 @@ TOOL_PAGES = {
              "add a table of contents in Word with one click."),
             ("Can I open the result in Google Docs?", "Yes. Upload the .docx to Google Drive and open it with Google "
              "Docs; headings, lists and tables are kept."),
-            ("Are images included?", "Images are written as links with their alt text, because markdown usually "
-             "points to images by address rather than containing them."),
+            ("Are images included?", "Images are replaced by their alt text in square brackets, because markdown "
+             "usually points to images by address rather than containing them."),
         ],
     },
     "/markdown-to-excel": {
@@ -60,7 +60,8 @@ TOOL_PAGES = {
         "faq": [
             ("What if my markdown has no table?", "The tool tells you no table was found. Use the "
              "<a href=\"/markdown-table-generator\">Markdown table generator</a> to make one."),
-            ("Does it keep column alignment?", "Right-aligned columns (<code>---:</code>) are right-aligned in Excel too."),
+            ("Does it keep column alignment?", "No. Cell values come across, but column alignment markers such as "
+             "<code>---:</code> are not applied in Excel; set alignment there after opening the file."),
             ("Can I go the other way?", "Yes, <a href=\"/excel-to-markdown\">Excel to Markdown</a> turns a spreadsheet "
              "into markdown tables."),
         ],
@@ -77,8 +78,7 @@ TOOL_PAGES = {
         "features": [
             ("PNG or JPG", "Transparent-free, sharp images at 1x, 2x or 3x scale for retina screens."),
             ("Light or dark", "Render in the brand's light or dark theme to match where the image is going."),
-            ("Code, tables and maths", "Syntax-highlighted code, tables and formatted text come out exactly as in the "
-             "preview."),
+            ("Code and tables", "Syntax-highlighted code, tables and formatted text come out as in the preview."),
             ("Private", "The image is drawn in your browser."),
         ],
         "steps_title": "How to convert Markdown to an image",
