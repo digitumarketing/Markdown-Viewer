@@ -152,6 +152,9 @@ function renderMD(md, target){
         });
       }).catch(function(){});
     }
+  }, function(e){
+    /* a library that failed to load: say so in the pane instead of throwing */
+    target.innerHTML = '<div class="error-note">' + esc(e.message) + "</div>";
   });
 }
 
@@ -917,11 +920,13 @@ function rowsToTable(rows, o){
   var sep = "| " + width.map(function(w, i){ var a = align[i]; return a === "center" ? ":" + new Array(w - 1).join("-") + ":" : a === "right" ? new Array(w).join("-") + ":" : new Array(w + 1).join("-"); }).join(" | ") + " |";
   return [line(head), sep].concat(bodyRows.map(line)).join("\n") + "\n";
 }
-TOOLS["xlsx-md"] = function(){
+TOOLS["xlsx-md"] = function(mode){
+  var csvMode = !!(mode && mode.csv);
   var name = "table", sheets = null, out = mdOutput(function(){ return name; });
   var header = el("input", { type: "checkbox", checked: true });
   var align = el("select", { "aria-label": "Alignment" }, [["auto", "Numbers right"], ["left", "Left"], ["center", "Centre"], ["right", "Right"]].map(function(o){ return el("option", { value: o[0], text: o[1] }); }));
-  var paste = el("textarea", { class: "pane-text", style: "min-height:180px;border-top:1px solid var(--rule)", placeholder: "…or paste cells copied from Excel or Google Sheets, or CSV text" });
+  var paste = el("textarea", { class: "pane-text", style: "min-height:180px;border-top:1px solid var(--rule)", "aria-label": csvMode ? "CSV text" : "Pasted cells",
+    placeholder: csvMode ? "…or paste CSV text here" : "…or paste cells copied from Excel or Google Sheets, or CSV text" });
   function render(){
     var o = { header: header.checked, align: align.value };
     if(sheets){
@@ -933,7 +938,8 @@ TOOLS["xlsx-md"] = function(){
       out.set(rowsToTable(rows, o));
     }else out.set("");
   }
-  var fi = fileInput({ title: "Spreadsheet", label: "Open an Excel or CSV file", button: "Open file", accept: ".xlsx,.xls,.csv,.ods,.tsv", onfile: function(f){
+  var fi = fileInput({ title: csvMode ? "CSV" : "Spreadsheet", label: csvMode ? "Open a CSV file" : "Open an Excel or CSV file", button: "Open file",
+    accept: csvMode ? ".csv,.tsv,text/csv,.txt" : ".xlsx,.xls,.csv,.ods,.tsv", onfile: function(f){
     name = baseName(f.name);
     Promise.all([need("xlsx"), readFile(f, "buffer")]).then(function(r){
       var wb = window.XLSX.read(r[1], { type: "array" });
@@ -946,7 +952,7 @@ TOOLS["xlsx-md"] = function(){
   [header, align].forEach(function(c){ c.addEventListener("change", render); });
   root.appendChild(opts([el("label", {}, [header, "First row is the header"]), el("label", {}, ["Alignment ", align])]));
   root.appendChild(grid(fi.pane, out.pane));
-  paste.value = "Channel\tVisits\tLeads\nSEO\t12400\t310\nAds\t5200\t145\nEmail\t2100\t88";
+  paste.value = csvMode ? 'Channel,Visits,Leads\nSEO,"12,400",310\nAds,"5,200",145\nEmail,"2,100",88' : "Channel\tVisits\tLeads\nSEO\t12400\t310\nAds\t5200\t145\nEmail\t2100\t88";
   render();
 };
 function parseCSV(text){
@@ -1418,6 +1424,940 @@ TOOLS["mermaid"] = function(){
     button("Copy as markdown", function(){ copy("```mermaid\n" + input.ta.value.trim() + "\n```\n", "Markdown"); })
   ], el("div", { style: "display:flex;flex-direction:column;flex:1" }, [err, canvas]))));
   input.set(MERMAID_EXAMPLES.Flowchart, "flowchart");
+};
+
+/* ================= tables and data ================= */
+
+/* ---------- CSV to Markdown: the spreadsheet tool, CSV first ---------- */
+TOOLS["csv-md"] = function(){ TOOLS["xlsx-md"]({ csv: true }); };
+
+/* ---------- Markdown to CSV ---------- */
+function csvLine(r, sep){
+  return r.map(function(c){ c = String(c); return new RegExp('["\\n' + (sep === "\t" ? "\\t" : sep) + "]").test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(sep);
+}
+TOOLS["md-csv"] = function(){
+  var tables = [], sep = ",";
+  var result = el("textarea", { class: "pane-text", readonly: true, "aria-label": "CSV result" });
+  var pick = el("select", { "aria-label": "Table" });
+  var input = mdInput({ sample: SAMPLE_MD, sampleName: "report", onchange: function(md){
+    need("marked").then(function(){
+      tables = mdTables(md);
+      var keep = +pick.value || 0;
+      pick.innerHTML = "";
+      tables.forEach(function(t, i){ pick.appendChild(el("option", { value: i, text: "Table " + (i + 1) + (t.name ? " – " + t.name : "") })); });
+      pick.value = Math.min(keep, Math.max(0, tables.length - 1));
+      show();
+    });
+  } });
+  function show(){
+    var t = tables[+pick.value || 0];
+    result.value = t ? t.rows.map(function(r){ return csvLine(r, sep); }).join("\n") + "\n" : "";
+    if(!t && input.ta.value.trim()) result.value = "No markdown table found.";
+  }
+  pick.addEventListener("change", show);
+  root.appendChild(opts([el("label", {}, ["Table ", pick]), el("label", {}, ["Separator ", seg([[",", "Comma"], [";", "Semicolon"], ["\t", "Tab"]], sep, function(v){ sep = v; show(); })])]));
+  root.appendChild(grid(input.pane, pane("CSV", [
+    button("Copy", function(){ if(tables.length) copy(result.value, "CSV"); }),
+    button("Download .csv", function(){ if(tables.length) download("\ufeff" + result.value, input.name.v + (sep === "\t" ? ".tsv" : ".csv"), "text/csv;charset=utf-8"); }, true)
+  ], result)));
+  input.set(SAMPLE_MD, "report");
+};
+
+/* ---------- JSON to Markdown ---------- */
+function jsonToMarkdown(v, mode){
+  function cell(x){
+    if(x === null || x === undefined) return "";
+    if(typeof x === "object") return JSON.stringify(x);
+    return String(x);
+  }
+  function isRecords(a){ return Array.isArray(a) && a.length && a.every(function(o){ return o && typeof o === "object" && !Array.isArray(o); }); }
+  function table(arr){
+    var keys = [];
+    arr.forEach(function(o){ Object.keys(o).forEach(function(k){ if(keys.indexOf(k) < 0) keys.push(k); }); });
+    return rowsToTable([keys].concat(arr.map(function(o){ return keys.map(function(k){ return cell(o[k]); }); })), { header: true, align: "auto" });
+  }
+  function list(x, depth){
+    var pad = new Array(depth + 1).join("  ");
+    if(Array.isArray(x)){
+      if(!x.length) return pad + "- *(empty)*\n";
+      return x.map(function(item, i){
+        return typeof item === "object" && item !== null ? pad + "- **" + (i + 1) + "**\n" + list(item, depth + 1) : pad + "- " + cell(item) + "\n";
+      }).join("");
+    }
+    if(x && typeof x === "object"){
+      return Object.keys(x).map(function(k){
+        var val = x[k];
+        if(val && typeof val === "object") return pad + "- **" + k + "**\n" + list(val, depth + 1);
+        return pad + "- **" + k + ":** " + cell(val) + "\n";
+      }).join("");
+    }
+    return pad + "- " + cell(x) + "\n";
+  }
+  function section(x, level){
+    if(mode === "list") return list(x, 0);
+    if(isRecords(x)) return table(x);
+    if(Array.isArray(x)) return list(x, 0);
+    if(x && typeof x === "object"){
+      var scalars = Object.keys(x).filter(function(k){ return x[k] === null || typeof x[k] !== "object"; });
+      var out = "";
+      if(scalars.length) out += rowsToTable([["Key", "Value"]].concat(scalars.map(function(k){ return [k, cell(x[k])]; })), { header: true, align: "left" }) + "\n";
+      Object.keys(x).filter(function(k){ return scalars.indexOf(k) < 0; }).forEach(function(k){
+        out += new Array(Math.min(level, 6) + 1).join("#") + " " + k + "\n\n" + section(x[k], level + 1) + "\n";
+      });
+      return out;
+    }
+    return cell(x) + "\n";
+  }
+  return section(v, 2).replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+TOOLS["json-md"] = function(){
+  var mode = "auto", out = mdOutput(function(){ return input.name.v; });
+  var sample = JSON.stringify({ campaign: "Autumn launch", budget: 2500, active: true,
+    channels: [{ name: "SEO", visits: 12400, leads: 310 }, { name: "Ads", visits: 5200, leads: 145 }, { name: "Email", visits: 2100, leads: 88 }],
+    owner: { name: "Digitum", site: "https://digitum.marketing" } }, null, 2);
+  var input = mdInput({ title: "JSON", placeholder: "Paste JSON here…", accept: ".json,application/json,.txt", sample: sample, sampleName: "data", onchange: convert });
+  function convert(){
+    var t = input.ta.value.trim();
+    if(!t) return out.set("");
+    try{ out.set(jsonToMarkdown(JSON.parse(t), mode)); }
+    catch(e){ out.note('<div class="error-note">Not valid JSON: ' + esc(e.message) + "</div>"); }
+  }
+  root.appendChild(opts([el("label", {}, ["Layout ", seg([["auto", "Tables where possible"], ["list", "Nested list"]], mode, function(v){ mode = v; convert(); })])]));
+  root.appendChild(grid(input.pane, out.pane));
+  input.set(sample, "data");
+};
+
+/* ---------- Table to Markdown: paste a table from anywhere ---------- */
+TOOLS["table-md"] = function(){
+  var out = mdOutput(function(){ return "table"; });
+  var header = el("input", { type: "checkbox", checked: true });
+  var align = el("select", { "aria-label": "Alignment" }, [["auto", "Numbers right"], ["left", "Left"], ["center", "Centre"], ["right", "Right"]].map(function(o){ return el("option", { value: o[0], text: o[1] }); }));
+  var rows = null;
+  var zone = el("div", { class: "paste-zone md", contenteditable: "true", role: "textbox", "aria-label": "Paste a table here",
+    "data-placeholder": "Click here and paste a table copied from a web page, Excel, Google Sheets, Word, Notion or a PDF…" });
+  function render(){ out.set(rows && rows.length ? rowsToTable(rows, { header: header.checked, align: align.value }) : ""); }
+  function fromHTML(html){
+    var tpl = document.createElement("template");
+    tpl.innerHTML = html; sanitize(tpl.content);
+    var t = tpl.content.querySelector("table");
+    if(!t) return null;
+    return Array.prototype.map.call(t.querySelectorAll("tr"), function(tr){
+      var cells = [];
+      Array.prototype.forEach.call(tr.children, function(td){
+        var span = +td.getAttribute("colspan") || 1, txt = td.textContent.replace(/\s+/g, " ").trim();
+        for(var i=0;i<span;i++) cells.push(i ? "" : txt);
+      });
+      return cells;
+    });
+  }
+  function fromText(t){
+    t = t.replace(/\r\n?/g, "\n").replace(/\n+$/, "");
+    if(/^\s*\|/.test(t)) return t.split("\n").filter(function(l){ return l.trim() && !/^\s*\|?\s*:?-{2,}/.test(l); }).map(function(l){ return l.trim().replace(/^\||\|$/g, "").split("|").map(function(c){ return c.trim(); }); });
+    if(t.indexOf("\t") > -1) return t.split("\n").map(function(l){ return l.split("\t"); });
+    if(/,/.test(t)) return parseCSV(t);
+    return t.split("\n").map(function(l){ return l.trim().split(/\s{2,}/); });
+  }
+  zone.addEventListener("paste", function(e){
+    e.preventDefault();
+    var html = e.clipboardData.getData("text/html"), text = e.clipboardData.getData("text/plain");
+    rows = (html && fromHTML(html)) || fromText(text || "");
+    zone.innerHTML = "";
+    var preview = document.createElement("div");
+    setHTML(preview, "<p><strong>Pasted " + rows.length + " row" + (rows.length === 1 ? "" : "s") + ".</strong> Paste again to replace it.</p>");
+    zone.appendChild(preview);
+    render();
+  });
+  [header, align].forEach(function(c){ c.addEventListener("change", render); });
+  root.appendChild(opts([el("label", {}, [header, "First row is the header"]), el("label", {}, ["Alignment ", align]),
+    el("span", { style: "color:var(--muted)" }, ["Need to edit cells? Use the ", el("a", { href: "/markdown-table-generator", text: "table generator" }), "."])]));
+  root.appendChild(grid(pane("Paste a table", [button("Clear", function(){ zone.innerHTML = ""; rows = null; render(); zone.focus(); })], zone), out.pane));
+};
+
+/* ================= books and documents ================= */
+
+/* ---------- EPUB to Markdown ---------- */
+TOOLS["epub-md"] = function(){
+  var name = "book", out = mdOutput(function(){ return name; }), prog = progressBar();
+  var fi = fileInput({ title: "EPUB", label: "Open an .epub ebook", button: "Open EPUB", accept: ".epub,application/epub+zip", onfile: function(f){
+    name = baseName(f.name);
+    prog.set("Opening the book…", 0);
+    Promise.all([need("jszip"), turndown(), readFile(f, "buffer")]).then(function(r){
+      return epubToMarkdown(r[2], r[1](), function(i, n){ prog.set("Converting chapter " + i + " of " + n, i / n); });
+    }).then(function(md){ prog.done(); out.set(md); })
+      .catch(function(e){ prog.done(); out.note('<div class="error-note">' + esc(e.message || "Could not read this ebook.") + "</div>"); });
+  } });
+  prog.els.forEach(function(e){ fi.extra.appendChild(e); });
+  root.appendChild(grid(fi.pane, out.pane));
+};
+function epubToMarkdown(buf, td, onchapter){
+  var parser = new DOMParser();
+  return window.JSZip.loadAsync(buf).then(function(zip){
+    var file = function(p){ var f = zip.file(p) || zip.file(decodeURIComponent(p)); if(!f) throw new Error("This EPUB is missing " + p); return f.async("string"); };
+    return file("META-INF/container.xml").then(function(c){
+      var opfPath = parser.parseFromString(c, "application/xml").querySelector("rootfile").getAttribute("full-path");
+      var dir = opfPath.indexOf("/") > -1 ? opfPath.slice(0, opfPath.lastIndexOf("/") + 1) : "";
+      return file(opfPath).then(function(opfText){
+        var opf = parser.parseFromString(opfText, "application/xml");
+        var title = (opf.getElementsByTagName("dc:title")[0] || {}).textContent || "";
+        var author = (opf.getElementsByTagName("dc:creator")[0] || {}).textContent || "";
+        var items = {};
+        Array.prototype.forEach.call(opf.getElementsByTagName("item"), function(i){ items[i.getAttribute("id")] = i.getAttribute("href"); });
+        var spine = Array.prototype.map.call(opf.getElementsByTagName("itemref"), function(r){ return items[r.getAttribute("idref")]; }).filter(Boolean);
+        var parts = [], i = 0;
+        var chain = spine.reduce(function(p, href){
+          return p.then(function(){
+            onchapter(++i, spine.length);
+            return file(dir + href.split("#")[0]).then(function(x){
+              var d = parser.parseFromString(x, "application/xhtml+xml");
+              if(d.querySelector("parsererror")) d = parser.parseFromString(x, "text/html");
+              var body = d.body || d.documentElement;
+              Array.prototype.forEach.call(body.querySelectorAll("img, image"), function(im){ im.replaceWith(document.createTextNode(im.getAttribute("alt") ? "[" + im.getAttribute("alt") + "]" : "")); });
+              var md = td.turndown(body.innerHTML || new XMLSerializer().serializeToString(body)).trim();
+              if(md) parts.push(md);
+            });
+          });
+        }, Promise.resolve());
+        return chain.then(function(){
+          /* skip the metadata title when the first chapter already opens with it */
+          var t = title.trim(), first = (parts[0] || "").split("\n")[0].replace(/^#+\s*/, "").trim();
+          var head = (t && first !== t ? "# " + t + "\n\n" : "") + (author ? "*" + author.trim() + "*\n\n" : "");
+          return head + parts.join("\n\n---\n\n") + "\n";
+        });
+      });
+    });
+  });
+}
+
+/* ---------- Markdown to EPUB ---------- */
+TOOLS["md-epub"] = function(){
+  var title = el("input", { type: "text", "aria-label": "Book title", placeholder: "Book title", style: "min-width:220px" });
+  var author = el("input", { type: "text", "aria-label": "Author", placeholder: "Author", style: "min-width:180px" });
+  var preview = el("div", { class: "pane-body md" });
+  var chapters = el("span", { class: "pane-title", style: "text-transform:none;letter-spacing:0" });
+  var sample = "# The Markdown Book\n\nA short book written in markdown.\n\n# Chapter one\n\nEvery `#` heading starts a new chapter.\n\n- Lists work\n- So do **bold** and *italic*\n\n# Chapter two\n\n> Quotes, tables and code all carry over.\n\n| Format | Good for |\n| --- | --- |\n| EPUB | E-readers |\n";
+  var input = mdInput({ sample: sample, sampleName: "book", onchange: function(md){
+    renderMD(md, preview);
+    var n = (md.match(/^# /gm) || []).length;
+    chapters.textContent = Math.max(1, n) + " chapter" + (n === 1 ? "" : "s");
+    var h = md.match(/^# (.+)$/m);
+    if(h && !title.dataset.touched) title.value = h[1].trim();
+  } });
+  title.addEventListener("input", function(){ title.dataset.touched = "1"; });
+  root.appendChild(opts([el("label", {}, ["Title ", title]), el("label", {}, ["Author ", author])]));
+  root.appendChild(grid(input.pane, pane("Preview", [chapters, button("Download .epub", function(){
+    if(!input.ta.value.trim()) return toast("Add some markdown first");
+    need("marked", "jszip").then(function(){ return buildEpub(input.ta.value, title.value || input.name.v, author.value); })
+      .then(function(b){ download(b, (title.value || input.name.v).replace(/[\\\/:*?"<>|]+/g, "-") + ".epub"); })
+      .catch(function(e){ toast("Could not build the EPUB. " + e.message); });
+  }, true)], preview)));
+  input.set(sample, "book");
+};
+function xhtml(html){
+  /* marked's HTML, made well-formed for EPUB readers */
+  var d = document.implementation.createHTMLDocument("");
+  d.body.innerHTML = html;
+  sanitize(d.body);
+  return new XMLSerializer().serializeToString(d.body).replace(/^<body[^>]*>|<\/body>$/g, "");
+}
+function buildEpub(md, title, author){
+  var id = "urn:uuid:" + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+  /* split on # headings into chapters; text before the first one is a preface */
+  var parts = md.split(/^(?=# )/m).filter(function(p){ return p.trim(); });
+  var chapters = parts.map(function(p, i){
+    var h = p.match(/^# (.+)$/m);
+    return { title: h ? h[1].replace(/[*_`]/g, "").trim() : (i ? "Chapter " + (i + 1) : "Introduction"), html: xhtml(window.marked.parse(p, { gfm:true })) };
+  });
+  var css = "body{font-family:serif;line-height:1.5;margin:0 5%}h1,h2,h3{font-family:sans-serif;line-height:1.2}pre{white-space:pre-wrap;font-size:.85em;background:#f4f1ea;padding:.6em}code{font-family:monospace}blockquote{margin:1em 0;padding-left:1em;border-left:3px solid #c8ff00}table{border-collapse:collapse}th,td{border:1px solid #ccc;padding:.3em .5em}img{max-width:100%}";
+  var page = function(t, body){
+    return '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en"><head><meta charset="utf-8"/><title>' + xml(t) + '</title><link rel="stylesheet" href="style.css"/></head><body>' + body + "</body></html>";
+  };
+  var zip = new window.JSZip();
+  zip.file("mimetype", "application/epub+zip", { compression: "STORE", createFolders: false });
+  zip.file("META-INF/container.xml", '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>', { createFolders: false });
+  zip.file("OEBPS/style.css", css, { createFolders: false });
+  chapters.forEach(function(c, i){ zip.file("OEBPS/ch" + (i + 1) + ".xhtml", page(c.title, c.html), { createFolders: false }); });
+  zip.file("OEBPS/nav.xhtml", page("Contents", '<nav epub:type="toc" id="toc"><h1>Contents</h1><ol>' +
+    chapters.map(function(c, i){ return '<li><a href="ch' + (i + 1) + '.xhtml">' + xml(c.title) + "</a></li>"; }).join("") + "</ol></nav>"), { createFolders: false });
+  zip.file("OEBPS/toc.ncx", '<?xml version="1.0" encoding="UTF-8"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="' + id + '"/></head><docTitle><text>' + xml(title) + "</text></docTitle><navMap>" +
+    chapters.map(function(c, i){ return '<navPoint id="n' + (i + 1) + '" playOrder="' + (i + 1) + '"><navLabel><text>' + xml(c.title) + '</text></navLabel><content src="ch' + (i + 1) + '.xhtml"/></navPoint>'; }).join("") + "</navMap></ncx>", { createFolders: false });
+  var modified = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  zip.file("OEBPS/content.opf", '<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">' +
+    '<dc:identifier id="bookid">' + id + "</dc:identifier><dc:title>" + xml(title) + "</dc:title><dc:language>en</dc:language>" + (author ? "<dc:creator>" + xml(author) + "</dc:creator>" : "") +
+    '<meta property="dcterms:modified">' + modified + '</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/><item id="css" href="style.css" media-type="text/css"/>' +
+    chapters.map(function(c, i){ return '<item id="ch' + (i + 1) + '" href="ch' + (i + 1) + '.xhtml" media-type="application/xhtml+xml"/>'; }).join("") +
+    '</manifest><spine toc="ncx">' + chapters.map(function(c, i){ return '<itemref idref="ch' + (i + 1) + '"/>'; }).join("") + "</spine></package>", { createFolders: false });
+  return zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+}
+
+/* ---------- LaTeX to Markdown ---------- */
+function latexToMarkdown(src){
+  var keep = [];
+  var stash = function(s){ keep.push(s); return "\u0002" + (keep.length - 1) + "\u0002"; };
+  var s = src.replace(/\r\n?/g, "\n");
+  s = s.replace(/(^|[^\\])%.*$/gm, "$1");                          /* comments */
+  var title = (s.match(/\\title\{([^}]*)\}/) || [])[1], author = (s.match(/\\author\{([^}]*)\}/) || [])[1];
+  var bodyM = s.match(/\\begin\{document\}([\s\S]*?)\\end\{document\}/);
+  if(bodyM) s = bodyM[1];
+  /* code and maths are kept verbatim */
+  s = s.replace(/\\begin\{(verbatim|lstlisting|minted)\}(?:\[[^\]]*\])?(?:\{([^}]*)\})?\n?([\s\S]*?)\\end\{\1\}/g, function(m, env, lang, code){ return stash("```" + (env === "minted" && lang ? lang : "") + "\n" + code.replace(/\n$/, "") + "\n```"); });
+  s = s.replace(/\\begin\{(equation|align|gather|displaymath|multline)\*?\}([\s\S]*?)\\end\{\1\*?\}/g, function(m, env, body){ return stash("$$\n" + (env.indexOf("align") === 0 ? "\\begin{aligned}" + body.trim() + "\\end{aligned}" : body.trim()) + "\n$$"); });
+  s = s.replace(/\\\[([\s\S]*?)\\\]/g, function(m, b){ return stash("$$\n" + b.trim() + "\n$$"); });
+  s = s.replace(/\$\$([\s\S]*?)\$\$/g, function(m, b){ return stash("$$\n" + b.trim() + "\n$$"); });
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, function(m, b){ return stash("$" + b.trim() + "$"); });
+  s = s.replace(/\$([^$\n]+)\$/g, function(m){ return stash(m); });
+  /* tables */
+  s = s.replace(/\\begin\{tabular\}\{[^}]*\}([\s\S]*?)\\end\{tabular\}/g, function(m, body){
+    var rows = body.replace(/\\(hline|toprule|midrule|bottomrule|cline\{[^}]*\})/g, "").split(/\\\\/).map(function(r){ return r.trim(); }).filter(Boolean)
+      .map(function(r){ return r.split(/(?<!\\)&/).map(function(c){ return c.trim(); }); });
+    return rows.length ? stash(rowsToTable(rows, { header: true, align: "left" })) : "";
+  });
+  s = s.replace(/\\begin\{(table|figure|center)\*?\}(\[[^\]]*\])?|\\end\{(table|figure|center)\*?\}/g, "");
+  s = s.replace(/\\caption\{([^}]*)\}/g, "*$1*").replace(/\\label\{[^}]*\}/g, "").replace(/\\includegraphics(\[[^\]]*\])?\{([^}]*)\}/g, "![]($2)");
+  /* lists, innermost first */
+  for(var guard = 0; guard < 6 && /\\begin\{(itemize|enumerate|description)\}/.test(s); guard++){
+    s = s.replace(/\\begin\{(itemize|enumerate|description)\}((?:(?!\\begin\{(?:itemize|enumerate|description)\})[\s\S])*?)\\end\{\1\}/g, function(m, env, body){
+      var n = 0;
+      return "\n" + body.split(/\\item\b/).slice(1).map(function(it){
+        var lab = it.match(/^\s*\[([^\]]*)\]/), text = it.replace(/^\s*\[[^\]]*\]/, "").trim().replace(/\n(?!\s*[-\d])/g, " ").replace(/\n/g, "\n  ");
+        n++;
+        return (env === "enumerate" ? n + ". " : "- ") + (lab ? "**" + lab[1] + "** " : "") + text;
+      }).join("\n") + "\n";
+    });
+  }
+  var heads = [["part", "#"], ["chapter", "#"], ["section", "##"], ["subsection", "###"], ["subsubsection", "####"], ["paragraph", "#####"]];
+  heads.forEach(function(h){ s = s.replace(new RegExp("\\\\" + h[0] + "\\*?\\{([^}]*)\\}", "g"), "\n" + h[1] + " $1\n"); });
+  s = s.replace(/\\begin\{quote\}([\s\S]*?)\\end\{quote\}/g, function(m, b){ return "\n" + b.trim().split("\n").map(function(l){ return "> " + l.trim(); }).join("\n") + "\n"; });
+  s = s.replace(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/g, "\n## Abstract\n\n$1\n");
+  s = s.replace(/\\href\{([^}]*)\}\{([^}]*)\}/g, "[$2]($1)").replace(/\\url\{([^}]*)\}/g, "<$1>")
+    .replace(/\\textbf\{([^}]*)\}/g, "**$1**").replace(/\\(textit|emph)\{([^}]*)\}/g, "*$2*").replace(/\\texttt\{([^}]*)\}/g, "`$1`")
+    .replace(/\\underline\{([^}]*)\}/g, "$1").replace(/\\footnote\{([^}]*)\}/g, " ($1)").replace(/\\(cite|ref|eqref)\{([^}]*)\}/g, "[$2]")
+    .replace(/\\(maketitle|tableofcontents|newpage|clearpage|noindent|centering|small|large|Large|normalsize|footnotesize)\b/g, "")
+    .replace(/\\\\\s*/g, "  \n").replace(/\\(%|&|\$|#|_|\{|\})/g, "$1").replace(/~/g, " ").replace(/``|''/g, '"').replace(/---/g, "—").replace(/--/g, "–")
+    .replace(/\\[a-zA-Z]+\*?(\[[^\]]*\])?\{([^}]*)\}/g, "$2").replace(/\\[a-zA-Z]+\*?/g, "").replace(/[{}]/g, "");
+  s = s.replace(/\u0002(\d+)\u0002/g, function(m, i){ return keep[+i]; });
+  s = s.split("\n").map(function(l){ return l.replace(/^[ \t]+(?![-\d>])/, ""); }).join("\n");
+  var head = (title ? "# " + title.replace(/\\\\/g, " ") + "\n\n" : "") + (author ? "*" + author.replace(/\\and/g, ",").replace(/\\\\/g, " ") + "*\n\n" : "");
+  return (head + s).replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+TOOLS["latex-md"] = function(){
+  var out = mdOutput(function(){ return input.name.v; });
+  var sample = "\\documentclass{article}\n\\title{A Short Paper}\n\\author{Digitum}\n\\begin{document}\n\\maketitle\n\\section{Introduction}\nMarkdown is \\textbf{simple} and \\emph{readable}. See \\href{https://digitum.marketing}{our site}.\n\n\\subsection{Results}\n\\begin{itemize}\n  \\item Faster writing\n  \\item Easier review\n\\end{itemize}\n\nThe growth rate is $g = \\frac{n_1 - n_0}{n_0}$.\n\\begin{equation}\nE = mc^2\n\\end{equation}\n\n\\begin{tabular}{lr}\nChannel & Leads \\\\\n\\hline\nSEO & 310 \\\\\nAds & 145 \\\\\n\\end{tabular}\n\\end{document}\n";
+  var input = mdInput({ title: "LaTeX", placeholder: "Paste LaTeX here…", accept: ".tex,.latex,text/x-tex,.txt", sample: sample, sampleName: "paper", onchange: function(t){ out.set(t.trim() ? latexToMarkdown(t) : ""); } });
+  root.appendChild(grid(input.pane, out.pane));
+  input.set(sample, "paper");
+};
+
+/* ---------- Markdown to LaTeX ---------- */
+function markdownToLatex(md, full){
+  /* keep maths out of marked's hands */
+  var math = [];
+  md = md.replace(/\$\$([\s\S]+?)\$\$/g, function(m, b){ math.push("\\[\n" + b.trim() + "\n\\]"); return "\u0003M" + (math.length - 1) + "\u0003"; })
+         .replace(/(^|[^\\$])\$(?![\s$])([^$\n]+?)(?<!\s)\$(?!\d)/g, function(m, pre, b){ math.push("$" + b + "$"); return pre + "\u0003M" + (math.length - 1) + "\u0003"; });
+  var tpl = document.createElement("template");
+  tpl.innerHTML = window.marked.parse(md, { gfm:true });
+  sanitize(tpl.content);
+  var used = {};
+  var tex = function(t){
+    return t.replace(/\\/g, "\\textbackslash{}").replace(/([#$%&_{}])/g, "\\$1").replace(/~/g, "\\textasciitilde{}").replace(/\^/g, "\\textasciicircum{}")
+      .replace(/\u0003M(\d+)\u0003/g, function(m, i){ return math[+i]; });
+  };
+  function inline(n){
+    var s = "";
+    n.childNodes.forEach(function(c){
+      if(c.nodeType === 3){ s += tex(c.nodeValue); return; }
+      if(c.nodeType !== 1) return;
+      var t = c.nodeName;
+      if(t === "STRONG" || t === "B") s += "\\textbf{" + inline(c) + "}";
+      else if(t === "EM" || t === "I") s += "\\emph{" + inline(c) + "}";
+      else if(t === "DEL" || t === "S"){ used.ulem = true; s += "\\sout{" + inline(c) + "}"; }
+      else if(t === "CODE") s += "\\texttt{" + tex(c.textContent) + "}";
+      else if(t === "A"){ used.link = true; s += "\\href{" + (c.getAttribute("href") || "").replace(/([#%&_])/g, "\\$1") + "}{" + inline(c) + "}"; }
+      else if(t === "IMG"){ used.img = true; s += "\\includegraphics[width=\\linewidth]{" + (c.getAttribute("src") || "") + "}"; }
+      else if(t === "BR") s += "\\\\\n";
+      else if(t === "INPUT") s += c.checked ? "$\\boxtimes$ " : "$\\square$ ";
+      else if(t === "UL" || t === "OL") s += "\n" + block(c);
+      else s += inline(c);
+    });
+    return s;
+  }
+  function block(n){
+    var t = n.nodeName;
+    if(/^H[1-6]$/.test(t)){ var cmd = ["section", "section", "subsection", "subsubsection", "paragraph", "subparagraph"][+t.charAt(1) - 1]; return "\\" + cmd + "{" + inline(n) + "}\n\n"; }
+    if(t === "P") return inline(n).trim() + "\n\n";
+    if(t === "UL" || t === "OL"){
+      var env = t === "OL" ? "enumerate" : "itemize";
+      return "\\begin{" + env + "}\n" + Array.prototype.map.call(n.children, function(li){ return "  \\item " + inline(li).trim().replace(/\n/g, "\n  "); }).join("\n") + "\n\\end{" + env + "}\n\n";
+    }
+    if(t === "BLOCKQUOTE") return "\\begin{quote}\n" + Array.prototype.map.call(n.children, block).join("").trim() + "\n\\end{quote}\n\n";
+    if(t === "PRE"){ used.code = true; return "\\begin{verbatim}\n" + n.textContent.replace(/\n$/, "") + "\n\\end{verbatim}\n\n"; }
+    if(t === "HR") return "\\noindent\\rule{\\linewidth}{0.4pt}\n\n";
+    if(t === "TABLE"){
+      used.table = true;
+      var rows = Array.prototype.map.call(n.querySelectorAll("tr"), function(tr){ return Array.prototype.map.call(tr.children, function(c){ return inline(c).trim(); }); });
+      var cols = n.querySelectorAll("tr")[0] ? Array.prototype.map.call(n.querySelectorAll("tr")[0].children, function(c){ var a = c.style.textAlign || c.getAttribute("align"); return a === "right" ? "r" : a === "center" ? "c" : "l"; }).join("") : "l";
+      return "\\begin{table}[h]\n\\centering\n\\begin{tabular}{" + cols + "}\n\\toprule\n" + rows.map(function(r, i){ return r.join(" & ") + " \\\\" + (i === 0 ? "\n\\midrule" : ""); }).join("\n") + "\n\\bottomrule\n\\end{tabular}\n\\end{table}\n\n";
+    }
+    return Array.prototype.map.call(n.childNodes, function(c){ return c.nodeType === 1 ? block(c) : ""; }).join("");
+  }
+  var title = "";
+  var body = Array.prototype.map.call(tpl.content.childNodes, function(c){
+    if(c.nodeType !== 1) return "";
+    if(full && c.nodeName === "H1" && !title){ title = inline(c); return ""; }
+    return block(c);
+  }).join("").trim() + "\n";
+  if(!full) return body;
+  var pkgs = ["\\usepackage[utf8]{inputenc}", "\\usepackage[T1]{fontenc}", "\\usepackage{amsmath,amssymb}"];
+  if(used.link) pkgs.push("\\usepackage{hyperref}");
+  if(used.img) pkgs.push("\\usepackage{graphicx}");
+  if(used.table) pkgs.push("\\usepackage{booktabs}");
+  if(used.ulem) pkgs.push("\\usepackage[normalem]{ulem}");
+  return "\\documentclass{article}\n" + pkgs.join("\n") + "\n" + (title ? "\n\\title{" + title + "}\n\\date{}\n" : "") +
+    "\n\\begin{document}\n" + (title ? "\\maketitle\n\n" : "\n") + body + "\n\\end{document}\n";
+}
+TOOLS["md-latex"] = function(){
+  var full = el("input", { type: "checkbox", checked: true });
+  var result = el("textarea", { class: "pane-text", readonly: true, "aria-label": "LaTeX result" });
+  var sample = "# A Short Paper\n\nMarkdown is **simple** and *readable*. See [our site](https://digitum.marketing).\n\n## Results\n\n- Faster writing\n- Easier review\n\nThe growth rate is $g = \\frac{n_1 - n_0}{n_0}$, and\n\n$$\nE = mc^2\n$$\n\n| Channel | Leads |\n| --- | ---: |\n| SEO | 310 |\n| Ads | 145 |\n";
+  var input = mdInput({ sample: sample, sampleName: "paper", onchange: convert });
+  function convert(){ need("marked").then(function(){ result.value = input.ta.value.trim() ? markdownToLatex(input.ta.value, full.checked) : ""; }); }
+  full.addEventListener("change", convert);
+  root.appendChild(opts([el("label", {}, [full, "Full document (preamble and \\begin{document})"])]));
+  root.appendChild(grid(input.pane, pane("LaTeX", [
+    button("Copy", function(){ if(result.value) copy(result.value, "LaTeX"); }),
+    button("Download .tex", function(){ if(result.value) download(result.value, input.name.v + ".tex", "application/x-tex"); }, true)
+  ], result)));
+  input.set(sample, "paper");
+};
+
+/* ---------- RTF to Markdown ---------- */
+function rtfToMarkdown(rtf){
+  var CP = "€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ"; /* cp1252 0x80–0x9F */
+  var out = [], para = "", stack = [], st = { b: false, i: false, skip: false, uc: 1 }, open = { b: false, i: false };
+  var skipDest = /^(fonttbl|colortbl|stylesheet|info|pict|object|header|footer|headerl|headerr|footerl|footerr|listtable|listoverridetable|rsidtbl|generator|xmlnstbl|themedata|colorschememapping|latentstyles|datastore|fldinst|pntext|pntxta|pntxtb|bkmkstart|bkmkend|field)$/;
+  var i = 0, ignoreNext = 0, inCell = false, row = [], rows = [];
+  function emit(t){
+    if(st.skip || !t) return;
+    var want = { b: st.b, i: st.i };
+    if(open.i && !want.i){ para += "*"; open.i = false; }
+    if(open.b && !want.b){ para += "**"; open.b = false; }
+    if(want.b && !open.b){ para += "**"; open.b = true; }
+    if(want.i && !open.i){ para += "*"; open.i = true; }
+    para += t.replace(/([*_`\\])/g, "\\$1");
+  }
+  function close(){ if(open.i){ para += "*"; open.i = false; } if(open.b){ para += "**"; open.b = false; } }
+  function endPara(){ close(); var t = para.replace(/\*\*\s*\*\*|\*\s*\*/g, "").trim(); if(t){ if(/^[•·▪◦-]\s*/.test(t)) t = "- " + t.replace(/^[•·▪◦-]\s*/, ""); out.push(t); } para = ""; }
+  while(i < rtf.length){
+    var c = rtf[i];
+    if(c === "{"){ stack.push(Object.assign({}, st)); i++; if(rtf.substr(i, 2) === "\\*") { st.skip = true; } continue; }
+    if(c === "}"){ close(); st = stack.pop() || st; i++; continue; }
+    if(c === "\\"){
+      var m = rtf.slice(i).match(/^\\([a-zA-Z]+)(-?\d+)? ?|^\\'([0-9a-fA-F]{2})|^\\([^a-zA-Z])/);
+      if(!m){ i++; continue; }
+      i += m[0].length;
+      if(m[3]){ if(ignoreNext){ ignoreNext--; continue; } var code = parseInt(m[3], 16); emit(code >= 0x80 && code <= 0x9f ? CP[code - 0x80] : String.fromCharCode(code)); continue; }
+      if(m[4]){ if(m[4] === "~") emit(" "); else if(m[4] === "-") {} else if(m[4] === "_") emit("-"); else if(m[4] === "*") st.skip = true; else emit(m[4]); continue; }
+      var w = m[1], n = m[2] === undefined ? null : +m[2];
+      if(skipDest.test(w)){ st.skip = true; continue; }
+      if(w === "par" || w === "sect"){ if(inCell) para += " "; else endPara(); }
+      else if(w === "line") para += "  \n";
+      else if(w === "tab") emit(inCell ? " " : "\t");
+      else if(w === "b") st.b = n !== 0;
+      else if(w === "i") st.i = n !== 0;
+      else if(w === "plain"){ st.b = false; st.i = false; }
+      else if(w === "uc") st.uc = n || 1;
+      else if(w === "u"){ emit(String.fromCharCode(n < 0 ? n + 65536 : n)); ignoreNext = st.uc; }
+      else if(w === "bullet") emit("•");
+      else if(w === "emdash") emit("—"); else if(w === "endash") emit("–");
+      else if(w === "lquote" || w === "rquote") emit("'"); else if(w === "ldblquote" || w === "rdblquote") emit('"');
+      else if(w === "intbl") inCell = true;
+      else if(w === "cell"){ close(); row.push(para.trim()); para = ""; }
+      else if(w === "row"){ rows.push(row); row = []; inCell = false; para = ""; }
+      else if(w === "pard"){ if(rows.length && !inCell){ out.push(rowsToTable(rows, { header: true, align: "left" }).trim()); rows = []; } }
+      continue;
+    }
+    if(c === "\r" || c === "\n"){ i++; continue; }
+    if(ignoreNext){ ignoreNext--; i++; continue; }
+    emit(c); i++;
+  }
+  endPara();
+  if(rows.length) out.push(rowsToTable(rows, { header: true, align: "left" }).trim());
+  /* consecutive bullet paragraphs form one list */
+  return out.reduce(function(acc, para, k){
+    return acc + (k ? (/^- /.test(para) && /^- /.test(out[k - 1]) ? "\n" : "\n\n") : "") + para;
+  }, "").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+TOOLS["rtf-md"] = function(){
+  var out = mdOutput(function(){ return input.name.v; });
+  var sample = "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Calibri;}}\n{\\b Meeting notes}\\par\nWe agreed to launch the {\\i markdown tools} next week.\\par\n\\bullet  Publish the tools\\par\n\\bullet  Submit the sitemap\\par\nBudget: \\'80 2,500\\par\n}";
+  var input = mdInput({ title: "RTF", placeholder: "Open an .rtf file, or paste raw RTF ({\\rtf1 …)", accept: ".rtf,application/rtf,text/rtf", sample: sample, sampleName: "notes", onchange: function(t){
+    if(!t.trim()) return out.set("");
+    if(t.trim().indexOf("{\\rtf") !== 0) return out.note('<div class="error-note">This is not RTF. RTF files start with {\\rtf1. For plain text, use <a href="/text-to-markdown">Text to Markdown</a>.</div>');
+    out.set(rtfToMarkdown(t));
+  } });
+  root.appendChild(grid(input.pane, out.pane));
+  input.set(sample, "notes");
+};
+
+/* ================= markdown to other apps ================= */
+
+/* ---------- Markdown to Confluence wiki markup ---------- */
+function markdownToConfluence(md){
+  var tpl = document.createElement("template");
+  tpl.innerHTML = window.marked.parse(md, { gfm:true });
+  sanitize(tpl.content);
+  var escW = function(t){ return t.replace(/([{}\[\]*_|^~+\-#!])/g, "\\$1"); };
+  function inline(n){
+    var s = "";
+    n.childNodes.forEach(function(c){
+      if(c.nodeType === 3){ s += escW(c.nodeValue.replace(/\n/g, " ")); return; }
+      if(c.nodeType !== 1) return;
+      var t = c.nodeName;
+      if(t === "STRONG" || t === "B") s += "*" + inline(c) + "*";
+      else if(t === "EM" || t === "I") s += "_" + inline(c) + "_";
+      else if(t === "DEL" || t === "S") s += "-" + inline(c) + "-";
+      else if(t === "CODE") s += "{{" + c.textContent + "}}";
+      else if(t === "A") s += "[" + inline(c) + "|" + (c.getAttribute("href") || "") + "]";
+      else if(t === "IMG") s += "!" + (c.getAttribute("src") || "") + "!";
+      else if(t === "BR") s += "\\\\";
+      else if(t === "INPUT") s += c.checked ? "(/) " : "(x) ";
+      else if(t !== "UL" && t !== "OL") s += inline(c);
+    });
+    return s;
+  }
+  function list(n, marks){
+    var m = marks + (n.nodeName === "OL" ? "#" : "*"), lines = [];
+    Array.prototype.forEach.call(n.children, function(li){
+      lines.push(m + " " + inline(li).trim());
+      Array.prototype.forEach.call(li.children, function(c){ if(c.nodeName === "UL" || c.nodeName === "OL") lines.push(list(c, m)); });
+    });
+    return lines.join("\n");
+  }
+  function block(n){
+    var t = n.nodeName;
+    if(/^H[1-6]$/.test(t)) return "h" + t.charAt(1) + ". " + inline(n).trim();
+    if(t === "P") return inline(n).trim();
+    if(t === "UL" || t === "OL") return list(n, "");
+    if(t === "BLOCKQUOTE") return "{quote}\n" + Array.prototype.map.call(n.children, block).join("\n\n") + "\n{quote}";
+    if(t === "PRE"){ var code = n.querySelector("code"), lang = code && (code.className.match(/language-(\w+)/) || [])[1]; return "{code" + (lang ? ":language=" + lang : "") + "}\n" + n.textContent.replace(/\n$/, "") + "\n{code}"; }
+    if(t === "HR") return "----";
+    if(t === "TABLE") return Array.prototype.map.call(n.querySelectorAll("tr"), function(tr){
+      var head = tr.parentNode.nodeName === "THEAD", sep = head ? "||" : "|";
+      return sep + Array.prototype.map.call(tr.children, function(c){ return " " + (inline(c).trim() || " ") + " "; }).join(sep) + sep;
+    }).join("\n");
+    return "";
+  }
+  return Array.prototype.map.call(tpl.content.children, block).filter(Boolean).join("\n\n") + "\n";
+}
+function copyRichHTML(html, plain, label){
+  if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+    return navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([plain], { type: "text/plain" }) })])
+      .then(function(){ toast(label || "Copied"); }, function(){ legacy(); });
+  }
+  legacy();
+  function legacy(){
+    var box = el("div", { contenteditable: "true", style: "position:fixed;left:-9999px;top:0" });
+    box.innerHTML = html; document.body.appendChild(box);
+    var r = document.createRange(); r.selectNodeContents(box);
+    var s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); box.remove();
+    toast(label || "Copied");
+  }
+}
+TOOLS["md-confluence"] = function(){
+  var result = el("textarea", { class: "pane-text", readonly: true, "aria-label": "Confluence wiki markup" });
+  var preview = el("div", { class: "pane-body md", hidden: true });
+  var mode = "wiki";
+  var input = mdInput({ sample: SAMPLE_MD, sampleName: "page", onchange: convert });
+  function convert(){ need("marked").then(function(){ result.value = input.ta.value.trim() ? markdownToConfluence(input.ta.value) : ""; renderMD(input.ta.value, preview); }); }
+  var tabs = seg([["wiki", "Wiki markup"], ["rich", "Formatted"]], mode, function(v){ mode = v; result.hidden = v !== "wiki"; preview.hidden = v !== "rich"; });
+  root.appendChild(el("p", { class: "lede", style: "font-size:15px;margin:-6px 0 16px" }, ["New Confluence editor: use ", el("strong", { text: "Copy formatted" }), " and paste. Older editors and the wiki markup macro: use ", el("strong", { text: "Copy wiki markup" }), "."]));
+  root.appendChild(grid(input.pane, pane("Confluence", [tabs,
+    button("Copy wiki markup", function(){ if(result.value) copy(result.value, "Wiki markup"); }),
+    button("Copy formatted", function(){ if(input.ta.value.trim()) copyRichHTML(preview.innerHTML, input.ta.value, "Formatted text copied. Paste it into Confluence"); }, true)
+  ], el("div", { style: "display:flex;flex-direction:column;flex:1" }, [result, preview]))));
+  input.set(SAMPLE_MD, "page");
+};
+
+/* ---------- Markdown to Slack mrkdwn ---------- */
+function markdownToSlack(md){
+  var keep = [];
+  var stash = function(s){ keep.push(s); return "\u0004" + (keep.length - 1) + "\u0004"; };
+  var s = md.replace(/\r\n?/g, "\n")
+    .replace(/```[\w-]*\n([\s\S]*?)```/g, function(m, code){ return stash("```\n" + code.replace(/\n$/, "") + "\n```"); })
+    .replace(/`([^`\n]+)`/g, function(m, c){ return stash("`" + c + "`"); });
+  /* tables become monospaced blocks, since Slack has no tables */
+  s = s.replace(/((?:^\|.*\|[ \t]*\n?){2,})/gm, function(t){ return stash("```\n" + t.replace(/^\|?\s*:?-{3,}.*\n?/m, "").trim() + "\n```") + "\n"; });
+  s = s
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, function(m, alt, url){ return stash("<" + url + "|" + (alt || "image") + ">"); })
+    .replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, function(m, text, url){ return stash("<" + url + "|" + text + ">"); })
+    .replace(/^#{1,6}\s+(.+?)\s*#*$/gm, function(m, t){ return stash("*" + t.replace(/\*\*/g, "") + "*"); })
+    .replace(/\*\*\*(.+?)\*\*\*/g, function(m, t){ return stash("*_" + t + "_*"); })
+    .replace(/(\*\*|__)(.+?)\1/g, function(m, d, t){ return stash("*" + t + "*"); })
+    .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)\*(?!\w)/g, "$1_$2_")
+    .replace(/~~(.+?)~~/g, "~$1~")
+    .replace(/^(\s*)[-*+]\s+\[x\]\s+/gim, "$1☑ ").replace(/^(\s*)[-*+]\s+\[ \]\s+/gm, "$1☐ ")
+    .replace(/^(\s*)[-*+]\s+/gm, function(m, sp){ return sp + "• "; })
+    .replace(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/gm, "──────────");
+  return s.replace(/\u0004(\d+)\u0004/g, function(m, i){ return keep[+i]; }).replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+function slackHTML(m){
+  var keep = [], stash = function(s){ keep.push(s); return "\u0005" + (keep.length - 1) + "\u0005"; };
+  var s = m.replace(/```\n?([\s\S]*?)```/g, function(x, c){ return stash("<pre>" + esc(c.replace(/\n$/, "")) + "</pre>"); })
+    .replace(/`([^`\n]+)`/g, function(x, c){ return stash("<code>" + esc(c) + "</code>"); });
+  s = esc(s)
+    .replace(/&lt;(https?:\/\/[^|&]+)\|([^&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$2</a>')
+    .replace(/(^|\s)\*([^*\n]+)\*(?=\s|$|[.,!?])/g, "$1<b>$2</b>")
+    .replace(/(^|\s|>)_([^_\n]+)_(?=\s|$|[.,!?<])/g, "$1<i>$2</i>")
+    .replace(/(^|\s)~([^~\n]+)~(?=\s|$)/g, "$1<s>$2</s>")
+    .replace(/^&gt; ?(.*)$/gm, '<span class="sq">$1</span>');
+  return s.replace(/\u0005(\d+)\u0005/g, function(x, i){ return keep[+i]; });
+}
+TOOLS["md-slack"] = function(){
+  var result = el("textarea", { class: "pane-text", readonly: true, style: "min-height:200px", "aria-label": "Slack message" });
+  var preview = el("div", { class: "slack" });
+  var input = mdInput({ sample: SAMPLE_MD, sampleName: "message", onchange: function(md){ result.value = md.trim() ? markdownToSlack(md) : ""; setHTML(preview, slackHTML(result.value)); } });
+  root.appendChild(grid(input.pane, pane("Slack", [button("Copy for Slack", function(){ if(result.value) copy(result.value, "Slack message"); }, true)],
+    el("div", { style: "display:flex;flex-direction:column;flex:1" }, [result, el("div", { class: "pane-body", style: "border-top:1px solid var(--rule);min-height:220px" }, [preview])]))));
+  input.set(SAMPLE_MD, "message");
+};
+
+/* ---------- Markdown to Google Docs ---------- */
+/* Google Docs pastes headings, lists and tables from HTML, but drops class
+   based styling, so the copy carries inline styles. */
+function inlineStyled(html){
+  var tpl = document.createElement("template");
+  tpl.innerHTML = html; sanitize(tpl.content);
+  var S = {
+    H1: "font-size:22pt;font-weight:700;margin:18pt 0 6pt", H2: "font-size:16pt;font-weight:700;margin:16pt 0 6pt", H3: "font-size:13pt;font-weight:700;margin:14pt 0 4pt",
+    P: "margin:0 0 8pt;line-height:1.4", BLOCKQUOTE: "margin:8pt 0;padding-left:10pt;border-left:3pt solid #C8FF00;color:#555",
+    PRE: "font-family:'Courier New',monospace;background:#F6F3ED;padding:8pt;font-size:10pt;white-space:pre-wrap", CODE: "font-family:'Courier New',monospace;background:#F1ECE3",
+    TABLE: "border-collapse:collapse", TH: "border:1px solid #BBB;padding:4pt 6pt;background:#EEE;font-weight:700;text-align:left", TD: "border:1px solid #BBB;padding:4pt 6pt", A: "color:#1155CC"
+  };
+  Array.prototype.forEach.call(tpl.content.querySelectorAll("*"), function(n){ if(S[n.nodeName]) n.setAttribute("style", S[n.nodeName]); });
+  var d = document.createElement("div"); d.appendChild(tpl.content);
+  return d.innerHTML;
+}
+TOOLS["md-gdocs"] = function(){
+  var preview = el("div", { class: "pane-body md" });
+  var input = mdInput({ sample: SAMPLE_MD, sampleName: "document", onchange: function(md){ renderMD(md, preview); } });
+  root.appendChild(el("ol", { class: "lede", style: "font-size:15px;margin:-6px 0 16px;padding-left:20px" }, [
+    el("li", {}, ["Press ", el("strong", { text: "Copy for Google Docs" }), ", then paste into a document with Ctrl V."]),
+    el("li", {}, ["Or press ", el("strong", { text: "Download .docx" }), " and open it in Google Drive with File › Open."])
+  ]));
+  root.appendChild(grid(input.pane, pane("Preview", [
+    button("Copy for Google Docs", function(){
+      if(!input.ta.value.trim()) return toast("Add some markdown first");
+      need("marked").then(function(){ copyRichHTML(inlineStyled(window.marked.parse(input.ta.value, { gfm:true })), input.ta.value, "Copied. Paste it into Google Docs"); });
+    }, true),
+    button("Download .docx", function(){
+      if(!input.ta.value.trim()) return toast("Add some markdown first");
+      need("marked", "jszip").then(function(){ return buildDocx(input.ta.value); }).then(function(b){ download(b, input.name.v + ".docx"); });
+    })
+  ], preview)));
+  input.set(SAMPLE_MD, "document");
+};
+
+/* ---------- ChatGPT to Markdown ---------- */
+function chatToMarkdown(conv){
+  /* follow the branch that was on screen, from current_node back to the root */
+  var map = conv.mapping || {}, node = conv.current_node, path = [];
+  while(node && map[node]){ path.unshift(map[node]); node = map[node].parent; }
+  if(!path.length) path = Object.keys(map).map(function(k){ return map[k]; });
+  var out = ["# " + (conv.title || "ChatGPT conversation")];
+  if(conv.create_time) out.push("*" + new Date(conv.create_time * 1000).toLocaleString() + "*");
+  path.forEach(function(n){
+    var m = n.message;
+    if(!m || !m.content || !m.author) return;
+    var role = m.author.role;
+    if(role !== "user" && role !== "assistant") return;
+    var parts = (m.content.parts || []).filter(function(p){ return typeof p === "string"; }).join("\n\n").trim();
+    if(!parts && m.content.text) parts = m.content.text;
+    if(!parts) return;
+    out.push("## " + (role === "user" ? "You" : "ChatGPT") + "\n\n" + parts);
+  });
+  return out.join("\n\n") + "\n";
+}
+TOOLS["chatgpt-md"] = function(){
+  var out = mdOutput(function(){ return name; }), name = "chat", convs = [];
+  var pick = el("select", { "aria-label": "Conversation", hidden: true });
+  var zone = el("div", { class: "paste-zone md", contenteditable: "true", role: "textbox", "aria-label": "Paste a chat",
+    "data-placeholder": "Select the conversation in ChatGPT, copy it (Ctrl C) and paste it here. Or open conversations.json from a ChatGPT data export." });
+  var convert = debounce(function(){
+    if(!zone.textContent.trim()) return out.set("");
+    turndown().then(function(make){ out.set(make().turndown(normaliseClipboardHTML(zone.innerHTML)).replace(/\n{3,}/g, "\n\n")); });
+  }, 150);
+  zone.addEventListener("paste", function(e){
+    var html = e.clipboardData.getData("text/html"), text = e.clipboardData.getData("text/plain");
+    e.preventDefault();
+    if(html) setHTML(zone, normaliseClipboardHTML(html)); else zone.textContent = text;
+    convert();
+  });
+  zone.addEventListener("input", convert);
+  var picker = filePicker(".json,application/json", function(f){
+    readFile(f).then(function(t){
+      var data = JSON.parse(t);
+      convs = Array.isArray(data) ? data : [data];
+      convs.sort(function(a, b){ return (b.create_time || 0) - (a.create_time || 0); });
+      pick.innerHTML = "";
+      convs.forEach(function(c, i){ pick.appendChild(el("option", { value: i, text: (c.title || "Untitled") + (c.create_time ? " · " + new Date(c.create_time * 1000).toLocaleDateString() : "") })); });
+      pick.hidden = false;
+      showConv();
+      toast(convs.length + " conversation" + (convs.length === 1 ? "" : "s") + " found");
+    }).catch(function(){ out.note('<div class="error-note">That file is not a ChatGPT export. Use conversations.json from Settings › Data controls › Export.</div>'); });
+  });
+  function showConv(){ var c = convs[+pick.value || 0]; if(!c) return; name = (c.title || "chat").replace(/[\\\/:*?"<>|]+/g, "-"); out.set(chatToMarkdown(c)); }
+  pick.addEventListener("change", showConv);
+  root.appendChild(opts([button("Open conversations.json", picker.open), pick,
+    button("Download all as .md", function(){
+      if(!convs.length) return toast("Open conversations.json first");
+      download(convs.map(chatToMarkdown).join("\n\n---\n\n"), "chatgpt-conversations.md", "text/markdown;charset=utf-8");
+    })]));
+  root.appendChild(grid(pane("Paste a chat", [button("Clear", function(){ zone.innerHTML = ""; out.set(""); zone.focus(); })], zone), out.pane));
+};
+
+/* ================= web to markdown (through the site's Worker) ================= */
+
+function fetchPublic(url){
+  return fetch("/api/fetch?url=" + encodeURIComponent(url)).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(j){
+      if(r.ok) return j;
+      var why = { bad_url: "That address can't be fetched. Use a full public link starting with https://",
+        unreachable: "The site could not be reached.", upstream: "The site answered with an error (" + (j.status || r.status) + "). It may be private or block automated requests.",
+        unsupported_type: "That link is not a web page or feed (" + (j.contentType || "unknown type") + ").", too_large: "That page is too large to convert." }[j.error];
+      throw new Error(why || "Could not fetch that address (" + r.status + ").");
+    });
+  });
+}
+function absolutise(doc, base){
+  Array.prototype.forEach.call(doc.querySelectorAll("a[href]"), function(a){ try{ a.setAttribute("href", new URL(a.getAttribute("href"), base).href); }catch(e){} });
+  Array.prototype.forEach.call(doc.querySelectorAll("img"), function(im){
+    var src = im.getAttribute("src") || im.getAttribute("data-src") || (im.getAttribute("srcset") || "").split(/[ ,]/)[0];
+    if(src){ try{ im.setAttribute("src", new URL(src, base).href); }catch(e){} }
+  });
+}
+/* the main content of a page: <article>, <main>, or the block with the most paragraph text */
+function mainContent(doc){
+  Array.prototype.forEach.call(doc.querySelectorAll("script,style,noscript,iframe,svg,form,nav,footer,header,aside,[role=navigation],[role=banner],[role=contentinfo],[aria-hidden=true],.nav,.menu,.sidebar,.footer,.header,.cookie,.ads,.advert,.share,.social,.comments,#comments"), function(n){ n.remove(); });
+  var pick = doc.querySelector("article") || doc.querySelector("main") || doc.querySelector("[role=main]");
+  if(pick && pick.textContent.trim().length > 200) return pick;
+  var best = doc.body, score = 0;
+  Array.prototype.forEach.call(doc.querySelectorAll("div,section"), function(d){
+    var s = Array.prototype.reduce.call(d.querySelectorAll(":scope > p"), function(t, p){ return t + p.textContent.length; }, 0);
+    if(s > score){ score = s; best = d; }
+  });
+  return best || doc.body;
+}
+
+/* ---------- URL to Markdown ---------- */
+TOOLS["url-md"] = function(){
+  var addr = el("input", { type: "url", placeholder: "https://example.com/article", "aria-label": "Web page address", style: "min-width:min(520px,100%)" });
+  var full = el("input", { type: "checkbox" });
+  var out = mdOutput(function(){ return name; }), name = "page";
+  function go(){
+    var v = addr.value.trim();
+    if(!v) return toast("Enter a web address");
+    if(!/^https?:\/\//i.test(v)) v = "https://" + v;
+    out.note('<div class="empty-note">Fetching ' + esc(v) + "…</div>");
+    Promise.all([fetchPublic(v), turndown()]).then(function(r){
+      var j = r[0], doc = new DOMParser().parseFromString(j.body, "text/html");
+      absolutise(doc, j.url);
+      var title = (doc.querySelector('meta[property="og:title"]') || {}).content || (doc.querySelector("title") || {}).textContent || "";
+      var node = full.checked ? doc.body : mainContent(doc);
+      var md = r[1]().turndown(node.innerHTML).replace(/\n{3,}/g, "\n\n").trim();
+      if(title && md.indexOf("# ") !== 0) md = "# " + title.trim() + "\n\n" + md;
+      name = (title || new URL(j.url).hostname).replace(/[\\\/:*?"<>|]+/g, "-").slice(0, 60);
+      out.set(md + "\n\n---\n\nSource: <" + j.url + ">\n");
+      history.replaceState(null, "", "?url=" + encodeURIComponent(j.url));
+    }).catch(function(e){ out.note('<div class="error-note">' + esc(e.message) + "</div>"); });
+  }
+  addr.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  root.appendChild(opts([addr, button("Convert", go, true), el("label", {}, [full, "Whole page, not just the article"])]));
+  root.appendChild(el("div", { class: "tool-grid single" }, [out.pane]));
+  var q = new URLSearchParams(location.search).get("url");
+  if(q){ addr.value = q; go(); }
+};
+
+/* ---------- Google Docs to Markdown ---------- */
+function googleDocHTML(html){
+  /* Google's export styles bold and italic through classes in a <style> block */
+  var doc = new DOMParser().parseFromString(html, "text/html");
+  var css = Array.prototype.map.call(doc.querySelectorAll("style"), function(s){ return s.textContent; }).join("\n");
+  var bold = {}, ital = {}, strike = {}, mono = {};
+  css.replace(/\.(c\d+)\{([^}]*)\}/g, function(m, cls, body){
+    if(/font-weight:\s*(700|bold)/.test(body)) bold[cls] = 1;
+    if(/font-style:\s*italic/.test(body)) ital[cls] = 1;
+    if(/line-through/.test(body)) strike[cls] = 1;
+    if(/font-family:\s*"?(Courier|Consolas|Roboto Mono|Source Code)/i.test(body)) mono[cls] = 1;
+  });
+  Array.prototype.forEach.call(doc.querySelectorAll("span[class]"), function(s){
+    var cl = s.className.split(/\s+/);
+    var wrap = function(tag){ var w = doc.createElement(tag); while(s.firstChild) w.appendChild(s.firstChild); s.appendChild(w); };
+    if(cl.some(function(c){ return mono[c]; })) wrap("code");
+    if(cl.some(function(c){ return strike[c]; })) wrap("del");
+    if(cl.some(function(c){ return ital[c]; })) wrap("em");
+    if(cl.some(function(c){ return bold[c]; })) wrap("strong");
+  });
+  Array.prototype.forEach.call(doc.querySelectorAll('a[href^="https://www.google.com/url"]'), function(a){
+    try{ var q = new URL(a.href).searchParams.get("q"); if(q) a.setAttribute("href", q); }catch(e){}
+  });
+  /* the document title is a paragraph styled "title" */
+  Array.prototype.forEach.call(doc.querySelectorAll("p.title"), function(p){ var h = doc.createElement("h1"); h.innerHTML = p.innerHTML; p.replaceWith(h); });
+  return doc.body.innerHTML;
+}
+TOOLS["gdocs-md"] = function(){
+  var addr = el("input", { type: "url", placeholder: "https://docs.google.com/document/d/…", "aria-label": "Google Docs link", style: "min-width:min(520px,100%)" });
+  var out = mdOutput(function(){ return name; }), name = "google-doc";
+  function go(){
+    var m = addr.value.match(/\/document\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]{20,})/) || addr.value.trim().match(/^([A-Za-z0-9_-]{25,})$/);
+    if(!m) return toast("Paste a Google Docs link");
+    out.note('<div class="empty-note">Fetching the document…</div>');
+    Promise.all([fetchPublic("https://docs.google.com/document/d/" + m[1] + "/export?format=html"), turndown()]).then(function(r){
+      if(/accounts\.google\.com|ServiceLogin/.test(r[0].url)) throw new Error("This document is private. In Google Docs, choose Share › General access › Anyone with the link, then try again.");
+      var md = r[1]().turndown(googleDocHTML(r[0].body)).replace(/\n{3,}/g, "\n\n").trim() + "\n";
+      var h = md.match(/^# (.+)$/m);
+      name = h ? h[1].replace(/[\\\/:*?"<>|]+/g, "-").slice(0, 60) : "google-doc";
+      out.set(md);
+    }).catch(function(e){ out.note('<div class="error-note">' + esc(e.message) + "</div>"); });
+  }
+  addr.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  root.appendChild(opts([addr, button("Convert", go, true)]));
+  root.appendChild(el("p", { class: "lede", style: "font-size:14.5px;margin:-4px 0 14px" }, ["The document must be shared as ", el("strong", { text: "Anyone with the link" }), ". For a private document, copy its text and use ",
+    el("a", { href: "/paste-to-markdown", text: "Paste to Markdown" }), "."]));
+  root.appendChild(el("div", { class: "tool-grid single" }, [out.pane]));
+};
+
+/* ---------- Reddit to Markdown ---------- */
+function redditToMarkdown(data, o){
+  var post = data[0].data.children[0].data, out = [];
+  out.push("# " + post.title);
+  out.push("*r/" + post.subreddit + " · u/" + post.author + " · " + post.score + " points · " + new Date(post.created_utc * 1000).toLocaleDateString() + "*");
+  if(post.url && post.url.indexOf("/comments/") < 0) out.push("<" + post.url + ">");
+  if(post.selftext) out.push(post.selftext.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+  out.push("[View on Reddit](https://www.reddit.com" + post.permalink + ")");
+  if(o.comments){
+    out.push("## Comments");
+    var n = 0;
+    (function walk(list, depth){
+      (list || []).forEach(function(c){
+        if(c.kind !== "t1" || n >= o.max || depth > o.depth) return;
+        var d = c.data;
+        if(!d.body || d.body === "[deleted]") return;
+        n++;
+        var q = new Array(depth + 2).join("> ");
+        out.push(q + "**u/" + d.author + "** · " + d.score + " points\n" + q.trim() + "\n" + d.body.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").split("\n").map(function(l){ return q + l; }).join("\n"));
+        if(d.replies && d.replies.data) walk(d.replies.data.children, depth + 1);
+      });
+    })(data[1].data.children, 0);
+  }
+  return out.join("\n\n") + "\n";
+}
+TOOLS["reddit-md"] = function(){
+  var addr = el("input", { type: "url", placeholder: "https://www.reddit.com/r/…/comments/…", "aria-label": "Reddit post link", style: "min-width:min(480px,100%)" });
+  var comments = el("input", { type: "checkbox", checked: true });
+  var max = el("select", { "aria-label": "Number of comments" }, [10, 25, 50, 100].map(function(n){ return el("option", { value: n, text: n + " comments", selected: n === 25 }); }));
+  var out = mdOutput(function(){ return name; }), name = "reddit-post", last = null;
+  function render(){ if(last) out.set(redditToMarkdown(last, { comments: comments.checked, max: +max.value, depth: 3 })); }
+  function go(){
+    var v = addr.value.trim();
+    var m = v.match(/reddit\.com\/(r\/[^\/]+\/comments\/[a-z0-9]+(?:\/[^\/?#]*)?)/i) || v.match(/redd\.it\/([a-z0-9]+)/i);
+    if(!m) return toast("Paste a link to a Reddit post");
+    var api = /redd\.it/.test(v) ? "https://www.reddit.com/comments/" + m[1] + ".json?raw_json=1" : "https://www.reddit.com/" + m[1].replace(/\/$/, "") + ".json?raw_json=1&limit=200";
+    out.note('<div class="empty-note">Fetching the post…</div>');
+    fetchPublic(api).then(function(j){
+      last = JSON.parse(j.body);
+      name = (last[0].data.children[0].data.title || "reddit-post").replace(/[\\\/:*?"<>|]+/g, "-").slice(0, 60);
+      render();
+    }).catch(function(e){ out.note('<div class="error-note">' + esc(e.message) + " Reddit sometimes blocks automated requests; if it does, open the post, copy it, and use <a href=\"/paste-to-markdown\">Paste to Markdown</a>.</div>"); });
+  }
+  addr.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  [comments, max].forEach(function(c){ c.addEventListener("change", render); });
+  root.appendChild(opts([addr, button("Convert", go, true), el("label", {}, [comments, "Include comments"]), max]));
+  root.appendChild(el("div", { class: "tool-grid single" }, [out.pane]));
+};
+
+/* ---------- Podcast to Markdown ---------- */
+function podcastToMarkdown(xmlText, td, limit){
+  var d = new DOMParser().parseFromString(xmlText, "application/xml");
+  if(d.querySelector("parsererror")) throw new Error("That address is not a podcast RSS feed.");
+  var ch = d.querySelector("channel");
+  if(!ch) throw new Error("That address is not a podcast RSS feed.");
+  var txt = function(n, sel){ var x = n.getElementsByTagName(sel)[0]; return x ? x.textContent.trim() : ""; };
+  var html2md = function(h){ return h ? td.turndown(h.indexOf("<") > -1 ? h : h.replace(/\n/g, "<br>")).trim() : ""; };
+  var out = ["# " + txt(ch, "title")];
+  var author = txt(ch, "itunes:author"), link = txt(ch, "link");
+  if(author || link) out.push("*" + [author, link ? "<" + link + ">" : ""].filter(Boolean).join(" · ") + "*");
+  var desc = txt(ch, "description") || txt(ch, "itunes:summary");
+  if(desc) out.push(html2md(desc));
+  var items = Array.prototype.slice.call(ch.getElementsByTagName("item"), 0, limit);
+  out.push("## Episodes (" + items.length + ")");
+  items.forEach(function(it){
+    var title = txt(it, "title"), date = txt(it, "pubDate"), dur = txt(it, "itunes:duration");
+    var enc = it.getElementsByTagName("enclosure")[0], audio = enc ? enc.getAttribute("url") : "";
+    var notes = txt(it, "content:encoded") || txt(it, "description") || txt(it, "itunes:summary");
+    var when = date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+    if(/^\d+$/.test(dur)){ var s = +dur; dur = Math.floor(s / 3600) ? Math.floor(s / 3600) + "h " + Math.floor(s % 3600 / 60) + "m" : Math.floor(s / 60) + " min"; }
+    out.push("### " + title + "\n\n*" + [when, dur].filter(Boolean).join(" · ") + "*" + (audio ? " · [Audio](" + audio + ")" : "") + (txt(it, "link") ? " · [Episode page](" + txt(it, "link") + ")" : "") +
+      (notes ? "\n\n" + html2md(notes) : ""));
+  });
+  return out.join("\n\n").replace(/\n{3,}/g, "\n\n") + "\n";
+}
+TOOLS["podcast-md"] = function(){
+  var addr = el("input", { type: "url", placeholder: "RSS feed or Apple Podcasts link", "aria-label": "Podcast feed or Apple Podcasts link", style: "min-width:min(480px,100%)" });
+  var limit = el("select", { "aria-label": "Episodes" }, [10, 25, 50, 200].map(function(n){ return el("option", { value: n, text: n === 200 ? "All episodes" : "Latest " + n, selected: n === 25 }); }));
+  var out = mdOutput(function(){ return name; }), name = "podcast", feedXML = null;
+  function render(){ if(feedXML) turndown().then(function(make){ try{ out.set(podcastToMarkdown(feedXML, make(), +limit.value)); }catch(e){ out.note('<div class="error-note">' + esc(e.message) + "</div>"); } }); }
+  function go(){
+    var v = addr.value.trim();
+    if(!v) return toast("Enter a podcast feed or Apple Podcasts link");
+    if(!/^https?:\/\//i.test(v)) v = "https://" + v;
+    out.note('<div class="empty-note">Fetching the feed…</div>');
+    var apple = v.match(/podcasts\.apple\.com\/.*\/id(\d+)/);
+    var feed = apple ? fetchPublic("https://itunes.apple.com/lookup?id=" + apple[1] + "&entity=podcast").then(function(j){
+      var r = JSON.parse(j.body).results || [];
+      if(!r[0] || !r[0].feedUrl) throw new Error("Apple Podcasts did not list a feed for this show.");
+      return r[0].feedUrl;
+    }) : Promise.resolve(v);
+    feed.then(fetchPublic).then(function(j){
+      feedXML = j.body;
+      var t = (feedXML.match(/<title>(?:<!\[CDATA\[)?([^<\]]+)/) || [])[1];
+      name = (t || "podcast").replace(/[\\\/:*?"<>|]+/g, "-").trim().slice(0, 60);
+      render();
+    }).catch(function(e){ out.note('<div class="error-note">' + esc(e.message) + "</div>"); });
+  }
+  addr.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  limit.addEventListener("change", render);
+  root.appendChild(opts([addr, button("Convert", go, true), limit]));
+  root.appendChild(el("div", { class: "tool-grid single" }, [out.pane]));
+};
+
+/* ================= the All tools page ================= */
+TOOLS["directory"] = function(){
+  /* the cards are already in the page for search engines; this adds filtering */
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".dir-card"));
+  var chips = document.querySelectorAll(".dir-filter button"), q = document.querySelector(".dir-search");
+  var count = document.querySelector(".dir-count");
+  var cat = "all";
+  function apply(){
+    var term = q ? q.value.trim().toLowerCase() : "", n = 0;
+    cards.forEach(function(c){
+      var ok = (cat === "all" || (" " + c.getAttribute("data-cat") + " ").indexOf(" " + cat + " ") > -1) && (!term || c.textContent.toLowerCase().indexOf(term) > -1);
+      c.hidden = !ok; if(ok) n++;
+    });
+    if(count) count.textContent = n + " tool" + (n === 1 ? "" : "s");
+  }
+  Array.prototype.forEach.call(chips, function(b){
+    b.addEventListener("click", function(){
+      Array.prototype.forEach.call(chips, function(x){ x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
+      b.classList.add("on"); b.setAttribute("aria-pressed", "true");
+      cat = b.getAttribute("data-cat"); apply();
+    });
+  });
+  if(q) q.addEventListener("input", apply);
+  var noscript = root.querySelector("noscript"); if(noscript) noscript.remove();
+  root.hidden = true;   /* the directory itself lives in the page content */
+  /* this page is "All tools", so the breadcrumb needs no separate link to it */
+  var mid = document.querySelector('.crumbs a[href="/tools"]');
+  if(mid){ if(mid.nextElementSibling) mid.nextElementSibling.remove(); mid.remove(); }
+  apply();
 };
 
 /* ================= boot ================= */

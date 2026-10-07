@@ -15,7 +15,8 @@
       "/api/*", "/s/*", "/e/*", "/tool", "/tool.html",
       "/markdown-*", "/Markdown-*", "/markmap-*", "/pdf-to-*", "/html-to-*", "/word-to-*",
       "/excel-to-*", "/image-to-*", "/text-to-*", "/paste-to-*", "/discord-*", "/obsidian-*",
-      "/github-*", "/mermaid-*"
+      "/github-*", "/mermaid-*", "/tools", "/csv-*", "/json-*", "/table-*", "/epub-*", "/latex-*",
+      "/rtf-*", "/chatgpt-*", "/url-*", "/google-*", "/reddit-*", "/podcast-*"
     ]
   },
   "kv_namespaces": [

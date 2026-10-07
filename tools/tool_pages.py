@@ -529,3 +529,282 @@ TOOL_PAGES = {
         ],
     },
 }
+
+
+def _p(tool, title, desc, eyebrow, h1, lede, features, steps_title, steps, faq):
+    return {"shell": "tool", "tool": tool, "title": title, "desc": desc, "eyebrow": eyebrow, "h1": h1,
+            "lede": lede, "features": features, "steps_title": steps_title, "steps": steps, "faq": faq}
+
+
+TOOL_PAGES.update({
+    "/csv-to-markdown": _p(
+        "csv-md", "CSV to Markdown Table Converter – Free & Instant | Digitum",
+        "Convert CSV to a Markdown table online. Open a .csv file or paste CSV text and get a neat, aligned table "
+        "for READMEs and docs. Free and private.",
+        "CSV to Markdown", "Convert CSV to a <em>markdown table</em>",
+        "Open a .csv file or paste comma-separated text and get a clean markdown table, with columns padded to line "
+        "up and numbers right-aligned.",
+        [("Quotes and commas handled", "Quoted values with commas, line breaks and escaped quotes are read correctly."),
+         ("Aligned columns", "Columns are padded so the table reads well as plain text too."),
+         ("Header and alignment options", "Choose whether the first row is a header and how columns are aligned.")],
+        "How to convert CSV to Markdown",
+        ["Open a .csv file or paste CSV text.", "Pick the header and alignment options.", "Copy the markdown table or download a .md file."],
+        [("Does it support semicolons?", "Yes. Files that use semicolons instead of commas, common in Europe, are detected."),
+         ("Can I convert Excel files too?", "Yes, use <a href=\"/excel-to-markdown\">Excel to Markdown</a> for .xlsx workbooks."),
+         ("Can I go back to CSV?", "Yes, <a href=\"/markdown-to-csv\">Markdown to CSV</a> extracts tables as CSV.")]),
+    "/markdown-to-csv": _p(
+        "md-csv", "Markdown to CSV – Extract Markdown Tables as CSV | Digitum",
+        "Extract markdown tables as CSV online. Pick a table, choose comma, semicolon or tab, and copy or download "
+        "the CSV. Free and private.",
+        "Markdown to CSV", "Extract markdown tables as <em>CSV</em>",
+        "Paste markdown with one or more tables, pick the table you want, and get CSV ready for Excel, Google Sheets "
+        "or a database import.",
+        [("Any table in the document", "Every table is found; pick the one you need."),
+         ("Comma, semicolon or tab", "Choose the separator your spreadsheet expects."),
+         ("Excel-friendly", "Downloads include a byte order mark so Excel reads accents and symbols correctly.")],
+        "How to convert a markdown table to CSV",
+        ["Paste markdown that contains a table.", "Choose the table and separator.", "Copy the CSV or download a .csv file."],
+        [("What about bold or links in cells?", "Formatting is removed and the plain text is kept."),
+         ("Can I get an Excel file instead?", "Yes, <a href=\"/markdown-to-excel\">Markdown to Excel</a> makes an .xlsx with a sheet per table."),
+         ("Is my data uploaded?", "No, everything runs in your browser.")]),
+    "/json-to-markdown": _p(
+        "json-md", "JSON to Markdown Converter – Tables & Lists from JSON | Digitum",
+        "Convert JSON to Markdown online. Arrays of objects become tables, nested objects become sections and lists. "
+        "Great for API responses and docs.",
+        "JSON to Markdown", "Turn JSON into <em>readable markdown</em>",
+        "Paste JSON from an API, a config file or a database export and get markdown you can read and share: tables "
+        "for lists of records, sections and lists for nested objects.",
+        [("Tables from records", "An array of objects becomes a table with a column for every key."),
+         ("Nested data as sections", "Nested objects become headings and key-value tables, so structure stays clear."),
+         ("List mode", "Prefer an outline? Switch to a nested bulleted list.")],
+        "How to convert JSON to Markdown",
+        ["Paste JSON or open a .json file.", "Choose tables or a nested list.", "Copy or download the markdown."],
+        [("What if my JSON is invalid?", "The tool shows the parse error so you can fix it."),
+         ("How are nested arrays shown?", "Arrays inside table cells are written as compact JSON; in list mode they become nested bullets."),
+         ("Is there a size limit?", "No fixed limit; very large files depend on your browser's memory.")]),
+    "/table-to-markdown": _p(
+        "table-md", "Table to Markdown – Paste Any Table, Get Markdown | Digitum",
+        "Paste a table from a web page, Excel, Google Sheets, Word, Notion or a PDF and get a clean markdown table "
+        "instantly. Free and private.",
+        "Table to Markdown", "Paste any table, get <em>markdown</em>",
+        "Copy a table from a website, a spreadsheet, a Word document or Notion, paste it here, and get a tidy "
+        "markdown table with the columns lined up.",
+        [("Works with any source", "HTML tables from web pages, cells from Excel and Google Sheets, Word and Notion tables."),
+         ("Merged cells handled", "Cells spanning several columns are expanded so the table stays rectangular."),
+         ("Clean output", "Padded columns and right-aligned numbers.")],
+        "How to convert a table to Markdown",
+        ["Copy a table from any app or page.", "Click the paste box and press <kbd>Ctrl</kbd> <kbd>V</kbd>.", "Copy the markdown table."],
+        [("Can I edit the table first?", "Yes, open it in the <a href=\"/markdown-table-generator\">table generator</a>."),
+         ("Does it keep links inside cells?", "Only the text is kept, so the table stays simple."),
+         ("What about CSV files?", "Use <a href=\"/csv-to-markdown\">CSV to Markdown</a>.")]),
+    "/epub-to-markdown": _p(
+        "epub-md", "EPUB to Markdown Converter – Ebooks to MD Online | Digitum",
+        "Convert EPUB ebooks to Markdown online. Chapters in reading order, with headings, lists, links and "
+        "emphasis kept. Runs in your browser; nothing is uploaded.",
+        "EPUB to Markdown", "Convert ebooks to <em>markdown</em>",
+        "Open an .epub file and get the whole book as markdown, chapter by chapter in reading order, ready for "
+        "notes, quoting or editing.",
+        [("Reading order", "Chapters follow the book's spine, exactly as an e-reader shows them."),
+         ("Structure kept", "Headings, lists, links, bold and italic come across as markdown."),
+         ("Private", "The book is unpacked in your browser; nothing is uploaded.")],
+        "How to convert EPUB to Markdown",
+        ["Open an .epub file.", "Wait while the chapters are converted.", "Copy, download, or open the result in the editor."],
+        [("Does it work with DRM-protected books?", "No. Books with DRM are encrypted and cannot be read by any converter."),
+         ("Are images included?", "Images are replaced by their description, so the text stays light."),
+         ("Can I make an EPUB from markdown?", "Yes, with <a href=\"/markdown-to-epub\">Markdown to EPUB</a>.")]),
+    "/markdown-to-epub": _p(
+        "md-epub", "Markdown to EPUB – Create an Ebook from Markdown, Free | Digitum",
+        "Create an EPUB ebook from Markdown online. Each # heading becomes a chapter, with a table of contents, "
+        "title and author. Works on Kindle, Apple Books and Kobo.",
+        "Markdown to EPUB", "Turn markdown into an <em>ebook</em>",
+        "Write or paste markdown, give it a title and author, and download a standard EPUB 3 ebook with a chapter "
+        "for every top-level heading and a table of contents.",
+        [("Chapters from headings", "Every # heading starts a new chapter, listed in the table of contents."),
+         ("Standard EPUB 3", "Opens in Apple Books, Kobo, Google Play Books and Calibre; Send to Kindle accepts EPUB too."),
+         ("Readable styling", "Clean typography, code blocks, quotes and tables.")],
+        "How to make an EPUB from Markdown",
+        ["Paste your markdown, using # headings for chapters.", "Enter the title and author.", "Press <strong>Download .epub</strong>."],
+        [("Can I send it to a Kindle?", "Yes. Amazon's Send to Kindle accepts EPUB files and converts them."),
+         ("Are images supported?", "Images from the web are linked; for a fully offline book, use images hosted online or add them in Calibre."),
+         ("Can I convert an EPUB back?", "Yes, with <a href=\"/epub-to-markdown\">EPUB to Markdown</a>.")]),
+    "/latex-to-markdown": _p(
+        "latex-md", "LaTeX to Markdown Converter – TeX to MD with Maths | Digitum",
+        "Convert LaTeX to Markdown online. Sections, lists, tables, links and emphasis convert, and equations stay as "
+        "$…$ and $$…$$ maths. Free and private.",
+        "LaTeX to Markdown", "Convert LaTeX to <em>markdown</em>, maths included",
+        "Paste a .tex document and get markdown with sections as headings, itemize and enumerate as lists, tabular "
+        "as tables, and every equation kept as LaTeX maths.",
+        [("Maths kept intact", "Inline and display equations become $…$ and $$…$$, which the viewer renders."),
+         ("Document structure", "Title, author, sections, lists, quotes, code listings and tables."),
+         ("Clean output", "Comments, layout commands and packages are dropped.")],
+        "How to convert LaTeX to Markdown",
+        ["Paste LaTeX or open a .tex file.", "Check the preview on the right.", "Copy or download the markdown."],
+        [("Does it handle custom macros?", "Common commands are converted; custom macros are removed, keeping their text."),
+         ("Will the equations render?", "Yes, in the <a href=\"/\">Markdown viewer</a>, which supports LaTeX maths."),
+         ("Can I convert markdown to LaTeX?", "Yes, with <a href=\"/markdown-to-latex\">Markdown to LaTeX</a>.")]),
+    "/markdown-to-latex": _p(
+        "md-latex", "Markdown to LaTeX Converter – MD to TeX Online, Free | Digitum",
+        "Convert Markdown to LaTeX online. Get a full .tex document with sections, lists, tables, links, code and "
+        "maths, ready for Overleaf or pdflatex.",
+        "Markdown to LaTeX", "Convert markdown to <em>LaTeX</em>",
+        "Write in markdown and get LaTeX: a complete document with only the packages it needs, or just the body to "
+        "paste into an existing paper. Works with Overleaf.",
+        [("Complete document", "Preamble, title and only the packages your content needs."),
+         ("Maths passes through", "$…$ and $$…$$ maths are kept as real LaTeX."),
+         ("Tables with booktabs", "Markdown tables become clean booktabs tables with the right alignment.")],
+        "How to convert Markdown to LaTeX",
+        ["Paste your markdown.", "Choose a full document or just the body.", "Copy the LaTeX or download a .tex file and open it in Overleaf."],
+        [("Are special characters escaped?", "Yes: &amp;, %, $, #, _ and braces are escaped outside maths."),
+         ("Does it work with Overleaf?", "Yes. Upload the .tex file or paste the code into a new project."),
+         ("Can I convert LaTeX to markdown?", "Yes, with <a href=\"/latex-to-markdown\">LaTeX to Markdown</a>.")]),
+    "/rtf-to-markdown": _p(
+        "rtf-md", "RTF to Markdown Converter – Rich Text Files to MD | Digitum",
+        "Convert RTF files to Markdown online. Paragraphs, bold, italic, bullets and tables come across; fonts and "
+        "colours are dropped. Free, private, no sign-up.",
+        "RTF to Markdown", "Convert RTF files to <em>markdown</em>",
+        "Open an .rtf file from WordPad, TextEdit or an old word processor, or paste raw RTF, and get clean markdown "
+        "with the text and basic formatting kept.",
+        [("Bold, italic and bullets", "Basic formatting and bullet points are kept."),
+         ("Accents and symbols", "Accented letters and Unicode characters are decoded correctly."),
+         ("Tables", "Simple RTF tables become markdown tables.")],
+        "How to convert RTF to Markdown",
+        ["Open an .rtf file or paste RTF code.", "Check the preview.", "Copy or download the markdown."],
+        [("Where do RTF files come from?", "WordPad, TextEdit, older Word versions and many apps' export menus."),
+         ("Are images kept?", "No, images embedded in RTF are dropped."),
+         ("What about .docx files?", "Use <a href=\"/word-to-markdown\">Word to Markdown</a>.")]),
+    "/markdown-to-confluence": _p(
+        "md-confluence", "Markdown to Confluence – Wiki Markup & Rich Text | Digitum",
+        "Convert Markdown for Confluence. Copy formatted text for the new editor, or Confluence wiki markup with "
+        "headings, tables, code and links. Free.",
+        "Markdown to Confluence", "Put markdown into <em>Confluence</em>",
+        "Convert markdown into something Confluence understands: formatted text to paste into the new editor, or "
+        "wiki markup for older pages and the markup macro.",
+        [("Formatted copy", "Paste straight into the Confluence editor with headings, lists, tables and code kept."),
+         ("Wiki markup", "h1., *bold*, _italic_, ||table headers||, {code} blocks and [links|url]."),
+         ("Code languages", "Code blocks keep their language for syntax highlighting.")],
+        "How to move markdown into Confluence",
+        ["Paste your markdown.", "Press <strong>Copy formatted</strong> and paste into Confluence.", "Or copy the wiki markup for the markup macro."],
+        [("Which should I use?", "Cloud and recent Server/Data Center editors: Copy formatted. Older editors or the wiki markup macro: wiki markup."),
+         ("Are tables supported?", "Yes, with a header row."),
+         ("What about Slack?", "Use <a href=\"/markdown-to-slack\">Markdown to Slack</a>.")]),
+    "/markdown-to-slack": _p(
+        "md-slack", "Markdown to Slack – Convert to Slack mrkdwn Format | Digitum",
+        "Convert Markdown to Slack's mrkdwn format. Bold, italic, strikethrough, links, lists, quotes and code "
+        "blocks, with a live Slack-style preview. Free.",
+        "Markdown to Slack", "Convert markdown to <em>Slack</em> formatting",
+        "Slack uses its own flavour of markdown. Paste standard markdown and get a message that formats correctly "
+        "in Slack, with a preview of how it will look.",
+        [("Slack's own syntax", "*bold*, _italic_, ~strike~, <url|text> links and • bullets."),
+         ("Headings and tables", "Headings become bold lines and tables become code blocks, since Slack has neither."),
+         ("Live preview", "See the message before you paste it.")],
+        "How to format markdown for Slack",
+        ["Paste your markdown.", "Check the preview.", "Press <strong>Copy for Slack</strong> and paste into a message or bot."],
+        [("Why does Slack show my ** as stars?", "Slack uses single *asterisks* for bold, so standard markdown does not format; this tool converts it."),
+         ("Does it work with Slack bots and the API?", "Yes, the output is Slack's mrkdwn format used by the API."),
+         ("What about Discord?", "Preview it with <a href=\"/discord-markdown\">Discord Markdown</a>.")]),
+    "/markdown-to-google-docs": _p(
+        "md-gdocs", "Markdown to Google Docs – Paste Formatted Text, Free | Digitum",
+        "Convert Markdown to Google Docs. Copy formatted text and paste it into a doc with headings, lists, tables "
+        "and links, or download a .docx to open in Drive.",
+        "Markdown to Google Docs", "Get markdown into <em>Google Docs</em>, formatted",
+        "Google Docs does not read markdown when you paste it. Convert it here first, then paste a properly "
+        "formatted document with real headings, lists, tables and links.",
+        [("Real Google Docs styles", "Headings, bold, italic, lists, tables and links paste as proper formatting."),
+         ("Or a .docx file", "Download a Word file and open it in Google Drive."),
+         ("Code and quotes", "Code blocks keep a monospaced font; quotes are indented.")],
+        "How to paste markdown into Google Docs",
+        ["Paste your markdown here.", "Press <strong>Copy for Google Docs</strong>.", "Paste into your document with <kbd>Ctrl</kbd> <kbd>V</kbd>."],
+        [("Doesn't Google Docs support markdown?", "Docs can auto-format some markdown as you type, but pasted markdown stays as plain text. This tool converts it."),
+         ("Can I go from Google Docs to markdown?", "Yes, with <a href=\"/google-docs-to-markdown\">Google Docs to Markdown</a>."),
+         ("Does it work with Word too?", "Yes, paste into Word, or use <a href=\"/markdown-to-word\">Markdown to Word</a>.")]),
+    "/chatgpt-to-markdown": _p(
+        "chatgpt-md", "ChatGPT to Markdown – Export Chats as Markdown, Free | Digitum",
+        "Convert ChatGPT conversations to Markdown. Paste a copied chat or open conversations.json from your data "
+        "export and save chats as clean .md files.",
+        "ChatGPT to Markdown", "Save ChatGPT chats as <em>markdown</em>",
+        "Paste a conversation copied from ChatGPT, or open the conversations.json file from your ChatGPT data "
+        "export, and save any chat, or all of them, as clean markdown.",
+        [("Copy and paste", "Select a chat in ChatGPT, copy and paste: headings, code blocks, tables and lists are kept."),
+         ("Your whole history", "Open conversations.json from a data export and pick any conversation."),
+         ("Download everything", "Save all conversations as one markdown file.")],
+        "How to export ChatGPT chats to Markdown",
+        ["In ChatGPT, open Settings › Data controls › Export data and download the zip, or simply copy a chat.",
+         "Open conversations.json here, or paste the copied chat.", "Pick a conversation and download it as .md."],
+        [("Is my chat history uploaded?", "No. The file is read in your browser and never leaves your device."),
+         ("Does it keep code blocks?", "Yes, with their language."),
+         ("Does it work with Claude or Gemini chats?", "Copy the chat and paste it; formatted text converts the same way.")]),
+    "/url-to-markdown": _p(
+        "url-md", "URL to Markdown – Convert Any Web Page to Markdown | Digitum",
+        "Convert any web page to Markdown. Paste a URL and get the article as clean markdown with headings, links, "
+        "images and tables, without menus, ads and clutter.",
+        "URL to Markdown", "Convert any web page to <em>markdown</em>",
+        "Paste a link to an article, blog post or documentation page and get its main content as clean markdown, "
+        "without navigation, ads, footers or cookie banners.",
+        [("Just the article", "The main content is found automatically; menus, sidebars and footers are left out."),
+         ("Links and images fixed", "Relative links and image paths are turned into full addresses."),
+         ("Whole page option", "Need everything? Convert the full page instead.")],
+        "How to convert a web page to Markdown",
+        ["Paste the page's address.", "Press <strong>Convert</strong>.", "Copy the markdown, download it, or open it in the editor."],
+        [("Does it work on every site?", "Public pages, yes. Pages behind a login, and sites that block automated requests, cannot be fetched."),
+         ("Does it run JavaScript on the page?", "No, it reads the page's HTML, which covers most articles and docs."),
+         ("Is this good for AI and LLMs?", "Yes, markdown is a compact, clean format for feeding web content to AI tools.")]),
+    "/google-docs-to-markdown": _p(
+        "gdocs-md", "Google Docs to Markdown – Convert a Doc Link to MD | Digitum",
+        "Convert Google Docs to Markdown from a link. Headings, bold, italic, lists, tables and links are kept. "
+        "Works with any doc shared as anyone with the link.",
+        "Google Docs to Markdown", "Convert Google Docs to <em>markdown</em>",
+        "Paste the link to a Google Doc and get clean markdown, with headings, formatting, lists, tables and links "
+        "kept. Perfect for moving content to GitHub, a CMS or a static site.",
+        [("From a link", "No add-on to install: paste the doc's link."),
+         ("Formatting kept", "Headings, bold, italic, strikethrough, lists, tables and links."),
+         ("Clean links", "Google's redirect links are turned back into the real addresses.")],
+        "How to convert Google Docs to Markdown",
+        ["In Google Docs, set Share › General access to <strong>Anyone with the link</strong>.", "Paste the link here and press <strong>Convert</strong>.",
+         "Copy or download the markdown."],
+        [("Does it work with private documents?", "No. For a private doc, copy its text and use <a href=\"/paste-to-markdown\">Paste to Markdown</a>."),
+         ("Are images kept?", "Images are linked from Google's servers; download them if you need permanent copies."),
+         ("Can I go the other way?", "Yes, with <a href=\"/markdown-to-google-docs\">Markdown to Google Docs</a>.")]),
+    "/reddit-to-markdown": _p(
+        "reddit-md", "Reddit to Markdown – Save Posts & Comments as MD | Digitum",
+        "Convert Reddit posts and comment threads to Markdown. Paste a post link and save the title, text and top "
+        "comments as clean markdown. Free.",
+        "Reddit to Markdown", "Save Reddit threads as <em>markdown</em>",
+        "Paste a link to a Reddit post and get the post and its top comments as markdown, with replies nested as "
+        "quotes, ready for notes, research or archiving.",
+        [("Post and comments", "Title, author, score, the post text and the top comments, with replies nested."),
+         ("Original formatting", "Reddit posts are written in markdown, so their formatting comes through as it was."),
+         ("Choose how much", "Include up to 100 comments, or just the post.")],
+        "How to convert a Reddit post to Markdown",
+        ["Copy the post's link from Reddit.", "Paste it here and press <strong>Convert</strong>.", "Choose how many comments to include, then copy or download."],
+        [("Does it work with private subreddits?", "No, only public posts."),
+         ("Why did it fail?", "Reddit sometimes limits automated requests. Try again later, or copy the post and use <a href=\"/paste-to-markdown\">Paste to Markdown</a>."),
+         ("Can I convert other web pages?", "Yes, with <a href=\"/url-to-markdown\">URL to Markdown</a>.")]),
+    "/podcast-to-markdown": _p(
+        "podcast-md", "Podcast to Markdown – Episodes & Show Notes as MD | Digitum",
+        "Convert a podcast feed to Markdown. Paste an RSS feed or Apple Podcasts link and get the episode list, "
+        "dates, durations and show notes as markdown.",
+        "Podcast to Markdown", "Turn a podcast feed into <em>markdown</em>",
+        "Paste a podcast's RSS feed or Apple Podcasts link and get the show and its episodes as markdown: titles, "
+        "dates, durations, links and full show notes.",
+        [("RSS or Apple Podcasts", "Paste the feed address, or an Apple Podcasts link and the feed is found for you."),
+         ("Show notes kept", "Episode descriptions keep their links and formatting."),
+         ("Choose how many", "The latest 10, 25 or 50 episodes, or the whole archive.")],
+        "How to convert a podcast to Markdown",
+        ["Paste the podcast's RSS feed or Apple Podcasts link.", "Press <strong>Convert</strong>.", "Choose how many episodes, then copy or download."],
+        [("Does it transcribe the audio?", "No. It converts the feed's text: titles, dates and show notes. Links to the audio are included."),
+         ("Where do I find the RSS feed?", "Most podcast websites link to it; or paste the show's Apple Podcasts link."),
+         ("Can I convert Spotify links?", "Spotify does not publish feeds; use the show's own RSS feed or its Apple Podcasts link.")]),
+})
+
+# The All tools page: its grid is built in build_seo.py from the NAV list.
+TOOL_PAGES["/tools"] = {
+    "shell": "tool", "tool": "directory",
+    "title": "All Markdown Tools – Free Converters, Viewer & Editor | Digitum",
+    "desc": "Every free Digitum markdown tool in one place: converters to and from Markdown, web to Markdown, "
+            "tables and data, and markdown utilities.",
+    "eyebrow": "All tools",
+    "h1": "All <em>markdown tools</em>",
+    "lede": "Every converter, viewer, editor and utility in one place. Pick a category or search for the tool you need. "
+            "All free, no sign-up, and your files stay in your browser.",
+    "features": [], "steps": [], "faq": [], "directory": True,
+}

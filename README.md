@@ -4,18 +4,28 @@ This folder is a complete static site. Deploy it as-is, `index.html` at the root
 
 ## Tools
 
-Besides the viewer there are converter and utility pages, listed in the
-header's **Tools** menu and linked from every page:
+Besides the viewer there are 36 converter and utility pages, listed in the
+header's **Tools** menu (four columns), on the **All tools** page (`/tools`,
+with category filters and search) and as related tools under every page:
 
-| From Markdown | To Markdown | Markdown tools |
-| --- | --- | --- |
-| Markdown to PDF, HTML (the viewer) | PDF to Markdown (PDF.js) | Markdown Reader, Editor, Cheat Sheet (the viewer) |
-| Markdown to Word (.docx built with JSZip) | HTML to Markdown (Turndown + GFM) | Markdown Table generator |
-| Markdown to Excel / CSV (SheetJS) | Word to Markdown (Mammoth) | Markdown Compare (jsdiff) |
-| Markdown to Image (html-to-image) | Excel / CSV to Markdown (SheetJS) | Discord Markdown preview |
-| Markdown to Text | Image to Markdown (Tesseract OCR) | Obsidian Markdown (callouts, wikilinks) |
-| Markmap Editor (mind maps) | Text to Markdown | GitHub README Viewer (GitHub API) |
-| | Paste to Markdown | Mermaid Live Editor |
+| From Markdown | To Markdown | Web to Markdown | Markdown tools |
+| --- | --- | --- | --- |
+| PDF, HTML (the viewer) | PDF (PDF.js) | URL (Worker fetch) | Viewer, Editor, Reader, Cheat Sheet (the viewer) |
+| Word (.docx, JSZip) | Word (Mammoth) | Paste (Turndown) | Table generator |
+| Google Docs (rich copy or .docx) | HTML (Turndown + GFM) | Google Docs (public export) | Compare (jsdiff) |
+| Excel (SheetJS), CSV | Excel, CSV (SheetJS) | ChatGPT (paste or conversations.json) | Mermaid live editor |
+| Image (html-to-image) | JSON | Reddit (public JSON) | Discord preview |
+| Text | Table (paste any table) | Podcast (RSS or Apple Podcasts) | Obsidian (callouts, wikilinks) |
+| EPUB (EPUB 3, JSZip) | Image (Tesseract OCR) | GitHub README (GitHub API) | |
+| LaTeX | EPUB (JSZip) | | |
+| Confluence (wiki markup or rich) | LaTeX | | |
+| Slack (mrkdwn) | RTF | | |
+| Markmap mind maps | Text | | |
+
+The web tools fetch public pages through `GET /api/fetch?url=` on the
+Worker, which only fetches public http(s) hosts (no IP literals, local names
+or non-standard ports), only text, HTML, XML, RSS and JSON, at most 4 MB,
+with a 12 second timeout. Everything else runs in the browser.
 
 - `public/tool.html` is one shell for all of them, `public/tools.js` builds
   the tool named in `<body data-tool>`, and `public/tools.css` styles it. The
@@ -166,7 +176,7 @@ element that is toggled with `hidden`, this rule already covers it.
 `sw.js` is network-first for page loads, so a fresh deploy is picked up on the
 next reload rather than being masked by the cache. Static assets are
 cache-first with a background refresh. If a change still doesn't appear, bump
-`CACHE` in `sw.js` (currently `digitum-md-viewer-v12`) to force old caches out.
+`CACHE` in `sw.js` (currently `digitum-md-viewer-v13`) to force old caches out.
 
 ## Editing and saving
 

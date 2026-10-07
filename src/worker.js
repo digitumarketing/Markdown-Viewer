@@ -6,6 +6,8 @@
  *
  *   POST /api/share        body: the markdown text  ->  { id }
  *   GET  /api/share/:id    ->  the markdown text
+ *   GET  /api/fetch?url=   ->  a public web page or feed, for the URL,
+ *                              Google Docs, Reddit and podcast converters
  *   GET  /s/:id, /e/:id    ->  the app (index.html), which then loads :id
  *
  *   GET  /markdown-editor and the other paths in PAGES  ->  the viewer
@@ -61,6 +63,68 @@ async function readShare(id, env) {
       "cache-control": "public, max-age=86400, immutable",
     },
   });
+}
+
+/* ---- fetching public pages for the web-to-markdown tools ---- */
+
+const FETCH_MAX = 4 * 1024 * 1024;
+const FETCH_TYPES = /^(text\/(html|plain|markdown|xml)|application\/(xhtml\+xml|xml|rss\+xml|atom\+xml|json|ld\+json))/i;
+
+/* only public http(s) hosts: no IP literals, no local names, not ourselves */
+function allowedTarget(raw, self) {
+  let u;
+  try { u = new URL(raw); } catch { return null; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  if (u.username || u.password) return null;
+  const h = u.hostname.toLowerCase();
+  if (!h.includes(".") || h.endsWith(".local") || h.endsWith(".internal") || h.endsWith(".localhost")) return null;
+  if (/^[\d.]+$/.test(h) || h.includes(":") || h.startsWith("[")) return null;
+  if (h === self) return null;
+  if (u.port && u.port !== "80" && u.port !== "443") return null;
+  return u;
+}
+
+async function fetchPage(request, url) {
+  const target = allowedTarget(url.searchParams.get("url") || "", url.hostname);
+  if (!target) return json({ error: "bad_url" }, 400);
+  let res;
+  try {
+    res = await fetch(target.toString(), {
+      redirect: "follow",
+      signal: AbortSignal.timeout(12000),
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; DigitumMarkdownBot/1.0; +https://markdown.digitum.marketing/tools)",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.5",
+        "accept-language": "en;q=0.9,*;q=0.5",
+      },
+      cf: { cacheTtl: 300, cacheEverything: true },
+    });
+  } catch (e) {
+    return json({ error: "unreachable", detail: String(e && e.message || e) }, 502);
+  }
+  const type = (res.headers.get("content-type") || "").split(";")[0].trim();
+  if (!res.ok) return json({ error: "upstream", status: res.status }, 502);
+  if (type && !FETCH_TYPES.test(type)) return json({ error: "unsupported_type", contentType: type }, 415);
+
+  /* read at most FETCH_MAX bytes */
+  const reader = res.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > FETCH_MAX) { reader.cancel(); return json({ error: "too_large", limit: FETCH_MAX }, 413); }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) { bytes.set(c, at); at += c.length; }
+  const charset = ((res.headers.get("content-type") || "").match(/charset=([^;]+)/i) || [])[1] || "utf-8";
+  let body;
+  try { body = new TextDecoder(charset.trim()).decode(bytes); } catch { body = new TextDecoder().decode(bytes); }
+
+  return json({ url: res.url || target.toString(), contentType: type, body }, 200);
 }
 
 const SECURITY_HEADERS = {
@@ -120,6 +184,10 @@ export default {
 
     if (path === "/api/share" && request.method === "POST") {
       return withHeaders(await createShare(request, env), { "x-robots-tag": "noindex" });
+    }
+
+    if (path === "/api/fetch" && request.method === "GET") {
+      return withHeaders(await fetchPage(request, url), { "x-robots-tag": "noindex", "cache-control": "no-store" });
     }
 
     const read = path.match(/^\/api\/share\/([A-Za-z0-9]{4,16})$/);
