@@ -370,7 +370,7 @@ TOOL_PAGES = {
                 "formatted markdown. Paste from Excel or edit an existing markdown table.",
         "features": [
             ("Spreadsheet-style editing", "Click a cell and type; Tab and Enter move between cells."),
-            ("Rows, columns and alignment", "Add, remove and reorder rows and columns, and align each column left, "
+            ("Rows, columns and alignment", "Add and remove rows and columns, and align each column left, "
              "centre or right."),
             ("Import", "Paste cells from Excel or Google Sheets, or paste a markdown table to edit it."),
             ("Neat output", "The markdown is padded so the columns line up as plain text too."),
