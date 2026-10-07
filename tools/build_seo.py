@@ -11,7 +11,11 @@ Writes:
   public/tool.html    <!--nav:start--> and <!--nav:end-->
   public/sitemap.xml  every indexable URL
 
-Tool page copy lives in tools/tool_pages.py.
+Tool page copy lives in tools/tool_pages.py; the keyword-targeted overrides and
+long-form sections (about, uses, extra FAQs) in tools/seo_copy*.py; the target
+keywords in tools/seo_keywords.py.  python3 tools/build_seo.py --check checks
+copy against the keywords without writing anything; tools/seo_audit.py checks
+the served pages.
 
 Run after changing any copy here:  python3 tools/build_seo.py
 """
@@ -24,12 +28,14 @@ from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from tool_pages import TOOL_PAGES  # noqa: E402
+from seo_copy import SEO_COPY  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = "https://markdown.digitum.marketing"
 ORG = {"@type": "Organization", "@id": "https://digitum.marketing/#org", "name": "Digitum Marketing",
        "url": "https://digitum.marketing/", "logo": SITE + "/brand/logo-charcoal.png"}
 TODAY = date.today().isoformat()
+PUBLISHED = "2026-10-01"
 
 # The Tools menu and the tool directory on every page, in three groups.
 # Every tool: the Tools menu (four columns), the All tools page and the
@@ -175,6 +181,11 @@ WHAT_IS = [
     "before it is formatted.",
     "That is why it is used for README files on GitHub, documentation, notes apps like Obsidian, and more and more "
     "for text written by AI assistants. A markdown viewer turns that text into the formatted page it describes.",
+    "Digitum is a free MD viewer that needs nothing installed. To open MD file content from an email, a download or a "
+    "repository, drag it onto the page or paste a link to the raw file. It doubles as a "
+    "<a href=\"/markdown-editor\">markdown editor with live preview</a>, turns documents into PDFs with the "
+    "<a href=\"/markdown-to-pdf\">Markdown to PDF converter</a>, and sits alongside "
+    "<a href=\"/tools\">40 other free markdown tools</a>.",
 ]
 
 # ------------------------------------------------------------------ landing pages
@@ -385,6 +396,23 @@ def features_html(title, items):
     return '<h2>%s</h2>\n<div class="feats">%s</div>' % (title, cards)
 
 
+def about_html(about):
+    title, paras = about
+    return "<h2>%s</h2>\n" % title + "\n".join("<p>%s</p>" % x for x in paras)
+
+
+def uses_html(uses):
+    title, items = uses
+    return '<h2>%s</h2>\n<ul class="uses">%s</ul>' % (title, "".join("<li>%s</li>" % x for x in items))
+
+
+def webpage_ld(url, name, desc):
+    return {"@type": "WebPage", "@id": url + "#page", "url": url, "name": name, "description": desc,
+            "isPartOf": {"@id": SITE + "/#site"}, "breadcrumb": {"@id": url + "#crumbs"},
+            "primaryImageOfPage": SITE + "/og-image.png", "datePublished": PUBLISHED, "dateModified": TODAY,
+            "publisher": {"@id": ORG["@id"]}, "inLanguage": "en"}
+
+
 def tools_html(current):
     """Related tools from the same menu column, plus a link to every tool."""
     if current == "/":
@@ -463,7 +491,7 @@ def breadcrumb_ld(url, name):
     if url != SITE + "/tools":
         items.append({"@type": "ListItem", "position": 2, "name": "All tools", "item": SITE + "/tools"})
     items.append({"@type": "ListItem", "position": len(items) + 1, "name": name, "item": url})
-    return {"@type": "BreadcrumbList", "itemListElement": items}
+    return {"@type": "BreadcrumbList", "@id": url + "#crumbs", "itemListElement": items}
 
 
 def home():
@@ -497,21 +525,36 @@ def landing(path, p):
     if p.get("cheatsheet"):
         parts.append(cheatsheet_html())
     if p.get("directory"):
-        return directory_html(), {"@context": "https://schema.org", "@graph": [
-            {"@type": "CollectionPage", "@id": url + "#page", "url": url, "name": p["title"].split(" | ")[0],
-             "description": p["desc"], "isPartOf": {"@id": SITE + "/#site"}, "mainEntity": {"@id": url + "#tools"}},
-            itemlist_ld(url), ORG, breadcrumb_ld(url, "All tools")]}
+        parts = ['<h2>Browse markdown tools by category</h2>', directory_html()]
+        if p.get("about"):
+            parts.append(about_html(p["about"]))
+        if p.get("uses"):
+            parts.append(uses_html(p["uses"]))
+        if p.get("faq"):
+            parts.append(faq_html(p["faq"]))
+        page = dict(webpage_ld(url, p["title"].split(" | ")[0], p["desc"]), mainEntity={"@id": url + "#tools"})
+        page["@type"] = "CollectionPage"
+        graph = [page, itemlist_ld(url), ORG, breadcrumb_ld(url, "All tools")]
+        if p.get("faq"):
+            graph.append(faq_ld(p["faq"], url))
+        return "\n".join(parts), {"@context": "https://schema.org", "@graph": graph}
+    if p.get("about"):
+        parts.append(about_html(p["about"]))
     for title, _, items in p.get("sections", []):
         parts.append(features_html(title, items))
     if p.get("features"):
-        parts.append(features_html("Why use this " + p["eyebrow"].lower() + " tool", p["features"]))
+        parts.append(features_html(p.get("features_title") or "Why use this " + p["eyebrow"].lower() + " tool",
+                                   p["features"]))
     if p.get("steps"):
         parts.append(steps_html(p["steps_title"], p["steps"]))
+    if p.get("uses"):
+        parts.append(uses_html(p["uses"]))
     if p.get("faq"):
         parts.append(faq_html(p["faq"]))
     parts.append(tools_html(path))
     name = p["eyebrow"]
-    graph = [app_ld(url, "Digitum " + name, p["desc"]), ORG, breadcrumb_ld(url, name)]
+    graph = [webpage_ld(url, p["title"].split(" | ")[0], p["desc"]), app_ld(url, "Digitum " + name, p["desc"]),
+             ORG, breadcrumb_ld(url, name)]
     if p.get("faq"):
         graph.append(faq_ld(p["faq"], url))
     if p.get("steps"):
@@ -524,7 +567,64 @@ def ld_text(obj):
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
+def check(all_pages, only):
+    """Offline keyword check of the generated copy (no files written)."""
+    from seo_keywords import KEYWORDS
+    bad = 0
+    for path, p in all_pages.items():
+        if only and path not in only:
+            continue
+        kw, secondary = KEYWORDS[path]
+        content, _ = landing(path, p)
+        content = re.sub(r'<h2>(Related markdown tools|All free markdown tools)</h2>.*', "", content, flags=re.S)
+        text = " ".join(strip_tags(re.sub(r"<(nav|div class=\"dir-grid\").*?</nav>", "", content, flags=re.S)).split())
+        h1, lede = strip_tags(p["h1"]), strip_tags(p["lede"])
+        full = " ".join([p["title"], p["desc"], h1, lede, text]).lower()
+        issues = []
+        for where, t in (("title", p["title"]), ("desc", p["desc"]), ("h1", h1), ("lede", lede)):
+            if kw not in t.lower():
+                issues.append("keyword not in " + where)
+        if not 30 <= len(p["title"]) <= 65:
+            issues.append("title %d chars (30-65)" % len(p["title"]))
+        if not 120 <= len(p["desc"]) <= 160:
+            issues.append("desc %d chars (120-160)" % len(p["desc"]))
+        if p["title"].lower().find(kw) > 25:
+            issues.append("keyword late in title")
+        issues += ["missing secondary '%s'" % x for x in secondary if x.lower() not in full]
+        words = len(text.split())
+        faqs = len(p.get("faq", []))
+        h2 = len(re.findall("<h2>", content)) + 1
+        if words < 600:
+            issues.append("%d words (want 600+)" % words)
+        if faqs < 5 and path != "/tools":
+            issues.append("%d FAQ (want 5+)" % faqs)
+        if full.count(kw) < 4:
+            issues.append("keyword used %dx (want 4+)" % full.count(kw))
+        if h2 < 5:
+            issues.append("%d H2 (want 5+)" % h2)
+        print("%-28s %4d words %2d faq %2d h2  %s" % (path, words, faqs, h2, "; ".join(issues) or "ok"))
+        bad += bool(issues)
+    return bad
+
+
 def main():
+    all_pages = dict(PAGES)
+    for k, v in PAGES.items():
+        v.setdefault("shell", "app")
+    all_pages.update(TOOL_PAGES)
+    for path, extra in SEO_COPY.items():
+        if path == "/":
+            continue
+        p = all_pages[path]
+        for k in ("title", "desc", "h1", "lede", "about", "uses", "features_title", "steps_title"):
+            if extra.get(k):
+                p[k] = extra[k]
+        p["faq"] = list(p.get("faq", [])) + list(extra.get("faq", []))
+    if "--check" in sys.argv:
+        return check(all_pages, [a for a in sys.argv[1:] if a.startswith("/")])
+    for path, p in all_pages.items():
+        assert len(p["title"]) <= 65, (path, len(p["title"]))
+        assert len(p["desc"]) <= 160, (path, len(p["desc"]))
     idx = ROOT / "public" / "index.html"
     s = idx.read_text()
     body, ld = home()
@@ -541,12 +641,6 @@ def main():
         t = re.sub(r"<!--nav:start-->.*?<!--nav:end-->", lambda m: "<!--nav:start-->" + nav + "<!--nav:end-->", t, flags=re.S)
         tool_shell.write_text(t)
 
-    all_pages = dict(PAGES)
-    for k, v in PAGES.items():
-        v.setdefault("shell", "app")
-    all_pages.update(TOOL_PAGES)
-    for path, p in all_pages.items():
-        assert len(p["desc"]) <= 160, (path, len(p["desc"]))
 
     out = {}
     for path, p in all_pages.items():
@@ -573,4 +667,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(1 if main() else 0)

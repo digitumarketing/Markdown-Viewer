@@ -1,0 +1,51 @@
+"""Target keywords for every page: (primary, [secondary, ...]).
+
+The primary keyword should appear in the URL, title, H1, meta description and
+the first paragraph; secondaries should appear naturally in the body copy.
+tools/seo_audit.py checks this against the live (or local) pages.
+"""
+
+KEYWORDS = {
+    "/": ("markdown viewer", ["md viewer", "open md file", "md file viewer", "markdown preview", "markdown editor"]),
+    "/markdown-editor": ("markdown editor", ["online markdown editor", "live preview", "md editor", "free markdown editor"]),
+    "/markdown-reader": ("markdown reader", ["md reader", "read markdown files", "markdown file reader"]),
+    "/markdown-to-pdf": ("markdown to pdf", ["md to pdf", "convert markdown to pdf", "markdown to pdf converter"]),
+    "/markdown-to-html": ("markdown to html", ["md to html", "convert markdown to html", "markdown to html converter"]),
+    "/markdown-cheat-sheet": ("markdown cheat sheet", ["markdown syntax", "markdown guide", "markdown formatting"]),
+    "/markdown-to-word": ("markdown to word", ["markdown to docx", "md to docx", "convert markdown to word"]),
+    "/markdown-to-excel": ("markdown to excel", ["markdown table to excel", "md to xlsx", "markdown to xlsx"]),
+    "/markdown-to-image": ("markdown to image", ["markdown to png", "md to png", "markdown to jpg"]),
+    "/markdown-to-text": ("markdown to text", ["markdown to plain text", "strip markdown", "remove markdown formatting"]),
+    "/markmap-editor": ("markmap", ["markmap editor", "markdown mind map", "markdown to mind map"]),
+    "/pdf-to-markdown": ("pdf to markdown", ["pdf to md", "convert pdf to markdown", "pdf to markdown converter"]),
+    "/html-to-markdown": ("html to markdown", ["html to md", "convert html to markdown", "html to markdown converter"]),
+    "/word-to-markdown": ("word to markdown", ["docx to markdown", "docx to md", "convert word to markdown"]),
+    "/excel-to-markdown": ("excel to markdown", ["excel to markdown table", "xlsx to markdown", "spreadsheet to markdown"]),
+    "/image-to-markdown": ("image to markdown", ["ocr", "screenshot to markdown", "image to text"]),
+    "/text-to-markdown": ("text to markdown", ["plain text to markdown", "txt to md", "convert text to markdown"]),
+    "/paste-to-markdown": ("paste to markdown", ["rich text to markdown", "copy and paste", "formatted text to markdown"]),
+    "/markdown-table-generator": ("markdown table generator", ["markdown table", "create a markdown table", "markdown table maker"]),
+    "/markdown-compare": ("markdown compare", ["markdown diff", "compare markdown files", "diff"]),
+    "/discord-markdown": ("discord markdown", ["discord formatting", "discord text formatting", "discord markdown preview"]),
+    "/obsidian-markdown": ("obsidian markdown", ["obsidian callouts", "obsidian wikilinks", "obsidian notes"]),
+    "/github-readme-viewer": ("github readme viewer", ["readme viewer", "view github readme", "readme.md"]),
+    "/mermaid-live-editor": ("mermaid live editor", ["mermaid editor", "mermaid diagram", "mermaid chart"]),
+    "/csv-to-markdown": ("csv to markdown", ["csv to markdown table", "csv to md"]),
+    "/markdown-to-csv": ("markdown to csv", ["markdown table to csv", "md to csv"]),
+    "/json-to-markdown": ("json to markdown", ["json to markdown table", "json to md"]),
+    "/table-to-markdown": ("table to markdown", ["html table to markdown", "convert a table to markdown"]),
+    "/epub-to-markdown": ("epub to markdown", ["epub to md", "convert epub to markdown"]),
+    "/markdown-to-epub": ("markdown to epub", ["md to epub", "create an epub from markdown"]),
+    "/latex-to-markdown": ("latex to markdown", ["tex to markdown", "latex to md"]),
+    "/markdown-to-latex": ("markdown to latex", ["md to latex", "markdown to tex"]),
+    "/rtf-to-markdown": ("rtf to markdown", ["rtf to md", "convert rtf to markdown"]),
+    "/markdown-to-confluence": ("markdown to confluence", ["confluence markdown", "confluence wiki markup"]),
+    "/markdown-to-slack": ("markdown to slack", ["slack markdown", "slack mrkdwn"]),
+    "/markdown-to-google-docs": ("markdown to google docs", ["paste markdown into google docs", "md to google docs"]),
+    "/chatgpt-to-markdown": ("chatgpt to markdown", ["export chatgpt", "chatgpt conversation", "save chatgpt chats"]),
+    "/url-to-markdown": ("url to markdown", ["website to markdown", "web page to markdown", "convert a url to markdown"]),
+    "/google-docs-to-markdown": ("google docs to markdown", ["google doc to md", "convert google docs to markdown"]),
+    "/reddit-to-markdown": ("reddit to markdown", ["save reddit posts", "reddit thread to markdown"]),
+    "/podcast-to-markdown": ("podcast to markdown", ["podcast rss", "show notes"]),
+    "/tools": ("markdown tools", ["markdown converter", "free markdown tools"]),
+}
