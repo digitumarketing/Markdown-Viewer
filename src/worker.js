@@ -127,6 +127,18 @@ async function fetchPage(request, url) {
   return json({ url: res.url || target.toString(), contentType: type, body }, 200);
 }
 
+/* Per-IP rate limits (Workers Rate Limiting bindings, see wrangler.jsonc).
+   Missing bindings, as in some local setups, mean no limit. */
+async function limited(limiter, request) {
+  if (!limiter) return null;
+  const key = request.headers.get("cf-connecting-ip") || "unknown";
+  const { success } = await limiter.limit({ key });
+  if (success) return null;
+  const r = json({ error: "rate_limited", retryAfter: 60 }, 429);
+  r.headers.set("retry-after", "60");
+  return r;
+}
+
 const SECURITY_HEADERS = {
   "x-content-type-options": "nosniff",
   "referrer-policy": "strict-origin-when-cross-origin",
@@ -183,11 +195,13 @@ export default {
     const path = url.pathname;
 
     if (path === "/api/share" && request.method === "POST") {
-      return withHeaders(await createShare(request, env), { "x-robots-tag": "noindex" });
+      const stop = await limited(env.SHARE_LIMITER, request);
+      return withHeaders(stop || await createShare(request, env), { "x-robots-tag": "noindex" });
     }
 
     if (path === "/api/fetch" && request.method === "GET") {
-      return withHeaders(await fetchPage(request, url), { "x-robots-tag": "noindex", "cache-control": "no-store" });
+      const stop = await limited(env.FETCH_LIMITER, request);
+      return withHeaders(stop || await fetchPage(request, url), { "x-robots-tag": "noindex", "cache-control": "no-store" });
     }
 
     const read = path.match(/^\/api\/share\/([A-Za-z0-9]{4,16})$/);

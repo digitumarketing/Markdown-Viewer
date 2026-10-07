@@ -3586,6 +3586,7 @@ var Share = (function(){
     return fetch("/api/share", { method:"POST", body:text, headers:{ "content-type":"text/markdown; charset=utf-8" } })
       .then(function(r){
         if(r.status === 413) throw new Error("too_large");
+        if(r.status === 429) throw new Error("rate_limited");
         if(!r.ok) throw new Error("http " + r.status);
         return r.json();
       }).then(function(d){
@@ -3618,6 +3619,8 @@ var Share = (function(){
         show(base() + "#md=" + data, base() + "#embed=" + data, text,
           (err && err.message === "too_large"
             ? "This document is too big for a short link, so it is packed into the link itself. "
+            : err && err.message === "rate_limited"
+            ? "You have created a lot of links in the last minute, so this one is packed into the link itself. "
             : "The short link service could not be reached, so the document is packed into the link itself. ") +
           "It works the same, it is just long.");
       });

@@ -27,6 +27,12 @@ Worker, which only fetches public http(s) hosts (no IP literals, local names
 or non-standard ports), only text, HTML, XML, RSS and JSON, at most 4 MB,
 with a 12 second timeout. Everything else runs in the browser.
 
+Both endpoints that do real work are rate limited per visitor IP with Workers
+Rate Limiting bindings (`wrangler.jsonc`): `/api/fetch` at 20 requests a
+minute, `POST /api/share` at 10 a minute. Over the limit they answer `429`
+with `Retry-After: 60`; the tools show a "wait a minute" message, and sharing
+falls back to the long `#md=` link.
+
 - `public/tool.html` is one shell for all of them, `public/tools.js` builds
   the tool named in `<body data-tool>`, and `public/tools.css` styles it. The
   Worker serves each URL by writing that page's copy and tool id into the

@@ -2122,7 +2122,8 @@ function fetchPublic(url){
       if(r.ok) return j;
       var why = { bad_url: "That address can't be fetched. Use a full public link starting with https://",
         unreachable: "The site could not be reached.", upstream: "The site answered with an error (" + (j.status || r.status) + "). It may be private or block automated requests.",
-        unsupported_type: "That link is not a web page or feed (" + (j.contentType || "unknown type") + ").", too_large: "That page is too large to convert." }[j.error];
+        unsupported_type: "That link is not a web page or feed (" + (j.contentType || "unknown type") + ").", too_large: "That page is too large to convert.",
+        rate_limited: "Too many requests in a short time. Please wait a minute and try again." }[j.error];
       throw new Error(why || "Could not fetch that address (" + r.status + ").");
     });
   });
